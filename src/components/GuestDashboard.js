@@ -10,7 +10,7 @@ export default function GuestDashboard({ data, onDelete, onRefresh }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const rows = guestRows(data);
-  const filtered = rows.filter(r => (eventId === 'all' || r.eventId === eventId) && (status === 'all' || r.attending === status) && r.name.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi')));
+  const filtered = rows.filter(r => (eventId === 'all' || (r.eventIds && r.eventIds.includes(eventId))) && (status === 'all' || r.attending === status) && r.name.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi')));
   const total = list => list.filter(r => r.attending === 'yes').reduce((sum, r) => sum + Number(r.count || 0), 0);
   const refresh = async () => {
     setBusy(true); setError('');
@@ -28,7 +28,7 @@ export default function GuestDashboard({ data, onDelete, onRefresh }) {
       <div className={styles.statItem}><h3>{rows.filter(r => r.attending === 'pending').length}</h3><p>Chưa phản hồi</p></div>
       <div className={styles.statItem}><h3>{rows.filter(r => r.attending === 'no').length}</h3><p>Báo vắng</p></div>
     </div>
-    <div className={styles.eventStats}>{data.events.map(event => <article key={event.id}><strong>{event.name}</strong><span>{total(rows.filter(r => r.eventId === event.id))} người</span><small>{rows.filter(r => r.eventId === event.id && r.attending === 'pending').length} lời mời chưa phản hồi</small></article>)}</div>
+    <div className={styles.eventStats}>{data.events.map(event => <article key={event.id}><strong>{event.name}</strong><span>{total(rows.filter(r => r.eventIds && r.eventIds.includes(event.id)))} người</span><small>{rows.filter(r => r.eventIds && r.eventIds.includes(event.id) && r.attending === 'pending').length} lời mời chưa phản hồi</small></article>)}</div>
     <p className={styles.hint}>Phản hồi cũ hoặc từ thiệp chung được ghi riêng; không tự ghép khách chỉ vì trùng tên. Số người bao gồm cả người đi cùng.</p>
     <div className={styles.filters}>
       <label>Tìm khách<input className={styles.input} value={query} onChange={e => setQuery(e.target.value)} placeholder="Nhập tên khách" /></label>

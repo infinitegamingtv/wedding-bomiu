@@ -27,15 +27,16 @@ export function guestRows(data) {
   const rows = (data.links || []).map(guest => {
     const response = responses.find(r => r.guestId === guest.id);
     if (response) linked.add(response.id);
-    const eventId = response?.eventId || guest.eventId || events[0]?.id;
-    return { ...response, guestId: guest.id, name: response?.name || guest.guestName, eventId,
-      location: events.find(e => e.id === eventId)?.name || response?.location || 'Chưa rõ',
-      attending: response?.attending || 'pending', count: response?.count || 0 };
+    const eventIdStr = response?.eventId || guest.eventId || events[0]?.id || '';
+    const eventIds = typeof eventIdStr === 'string' ? eventIdStr.split(',').filter(Boolean) : [];
+    const location = eventIds.map(id => events.find(e => e.id === id)?.name).filter(Boolean).join(' + ') || response?.location || 'Chưa rõ';
+    return { ...response, guestId: guest.id, name: response?.name || guest.guestName, eventIds, location, attending: response?.attending || 'pending', count: response?.count || 0 };
   });
   for (const r of responses) {
     if (linked.has(r.id)) continue;
-    const event = events.find(e => e.id === r.eventId || e.name === r.location);
-    rows.push({ ...r, eventId: event?.id || '', location: event?.name || r.location || 'Chưa rõ', legacy: !r.guestId });
+    const eventIds = typeof r.eventId === 'string' ? r.eventId.split(',').filter(Boolean) : [];
+    const location = eventIds.map(id => events.find(e => e.id === id)?.name).filter(Boolean).join(' + ') || r.location || 'Chưa rõ';
+    rows.push({ ...r, eventIds, location, legacy: !r.guestId });
   }
   return rows;
 }

@@ -143,6 +143,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   
   const tracksCount = invitation.musicTracks?.length || (invitation.musicUrl ? 1 : 0);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (tracksCount > 1) setTrack(Math.floor(Math.random() * tracksCount));
   }, [tracksCount]);
   

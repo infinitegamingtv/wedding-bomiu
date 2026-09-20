@@ -31,8 +31,14 @@ export async function POST(request) {
     if (!who.guestId && !readToken(request.cookies.get(VISITOR_COOKIE)?.value)) invalid('Vui lòng tải lại thiệp để gửi phản hồi.');
     await limitRequests('reply:' + who.id, 20, 60);
     const eventIds = typeof body.eventId === 'string' ? body.eventId.split(',').filter(Boolean) : (Array.isArray(body.eventId) ? body.eventId : []);
-    const eventObjects = eventIds.map(id => data.events.find(e => e.id === id)).filter(Boolean);
-    if (!eventObjects.length) invalid('Vui lòng chọn tiệc.');
+    if (!eventIds.length) invalid('Vui lòng chọn tiệc.');
+    const eventObjects = eventIds.map(id => data.events.find(e => e.id === id));
+    if (eventObjects.some(e => !e)) invalid('Mã tiệc không hợp lệ.');
+    if (who.guestId) {
+      const guest = data.links?.find(g => g.id === who.guestId);
+      const allowedEventIds = guest?.eventId ? guest.eventId.split(',').filter(Boolean) : data.events.map(e => e.id);
+      if (eventIds.some(id => !allowedEventIds.includes(id))) invalid('Yêu cầu không hợp lệ: Bạn không có quyền phản hồi cho tiệc này.');
+    }
     if (typeof body.name !== 'string' || !body.name.trim() || body.name.length > 120) invalid('Tên khách phải có từ 1 đến 120 ký tự.');
     if (!['yes', 'no'].includes(body.attending)) invalid('Vui lòng chọn trạng thái tham dự.');
     if (body.attending === 'yes' && (!Number.isInteger(body.count) || body.count < 1 || body.count > 10)) invalid('Số người tham dự phải từ 1 đến 10.');
