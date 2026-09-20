@@ -130,6 +130,19 @@ export default function AdminPage() {
     setUploadingHeroBg(false);
   };
 
+  const handleAddMusicUrl = () => {
+    const url = prompt('Nhập link nhạc (URL, kết thúc bằng .mp3 hoặc định dạng audio hợp lệ):');
+    if (!url) return;
+    const name = prompt('Nhập tên bài hát (không bắt buộc):') || 'Bài hát mới';
+    setData(prev => ({
+      ...prev,
+      invitation: {
+        ...prev.invitation,
+        musicTracks: [...(prev.invitation.musicTracks || []), { name, url }]
+      }
+    }));
+  };
+
   const handleMusicUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -403,7 +416,8 @@ export default function AdminPage() {
                 {uploadingAudio ? 'Đang tải...' : '🎵 Tải nhiều bài nhạc (.mp3)'}
                 <input type="file" accept="audio/*" multiple style={{display: 'none'}} onChange={handleMusicUpload} disabled={uploadingAudio} />
               </label>
-              <span style={{color: '#888', fontSize: '0.85rem'}}>Chọn 1 hoặc nhiều file cùng lúc</span>
+              <button className={styles.buttonSecondary} onClick={handleAddMusicUrl}>Hoặc gắn link URL</button>
+              <span style={{color: '#888', fontSize: '0.85rem'}}>Chọn file hoặc dán link nhạc</span>
             </div>
             {(data.invitation.musicTracks || []).length > 0 && (
               <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px'}}>
