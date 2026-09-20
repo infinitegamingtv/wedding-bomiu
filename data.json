@@ -1,0 +1,198 @@
+{
+  "texts": {
+    "heroSubtitle": "Lễ Thành Hôn",
+    "inviteTitle": "Trân Trọng Kính Mời",
+    "inviteGreeting": "Tới dự bữa tiệc chung vui cùng gia đình chúng tôi",
+    "groomParentsTitle": "Nhà Trai",
+    "brideParentsTitle": "Nhà Gái",
+    "locationPrefix": "Tại",
+    "itineraryTitle": "Lịch Trình",
+    "storyTitle": "Chuyện Tình Yêu",
+    "galleryTitle": "Khoảnh Khắc",
+    "guestbookTitle": "Sổ Lưu Bút",
+    "rsvpTitle": "Xác Nhận Tham Dự",
+    "giftTitle": "Gửi Tặng Yêu Thương"
+  },
+  "invitation": {
+    "groom": "Quang Trưởng",
+    "bride": "Hồng Nhung",
+    "date": "2026-10-18T09:30:00",
+    "lunarDate": "09 tháng 09 năm Bính Ngọ",
+    "groomParents": [
+      "Đặng Quang Cường",
+      "Nguyễn Thị Luyện"
+    ],
+    "brideParents": [
+      "Đỗ Văn Long",
+      "Nguyễn Thị Ngọc"
+    ],
+    "groomAddress": "Khởi Bung - Bảo Nhai - Lào Cai",
+    "brideAddress": "Số 25 - Ngõ Nam Kỳ 40 - Phường Hàm Rồng - Tỉnh Thanh Hóa",
+    "location": "Tư gia nhà trai",
+    "message": "Sự hiện diện của quý khách là niềm vinh hạnh cho gia đình chúng tôi!",
+    "musicUrl": "/uploads/1787496540825_ShaneFilan-BeautifulInWhitePianoCoverwithStringswithLyricsPIANOSHEET.mp3",
+    "musicTracks": [
+      {
+        "name": "Beautiful In White - Shane Filan",
+        "url": "/uploads/1787496540825_ShaneFilan-BeautifulInWhitePianoCoverwithStringswithLyricsPIANOSHEET.mp3"
+      }
+    ],
+    "logoUrl": "/uploads/1787498367961_Changingcolorfilltoa98b5b202608222312.png",
+    "heroBgUrl": "/uploads/1787498747264_TVBA9924.JPG",
+    "qrCodeUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg",
+    "groomBio": "Chàng Trai ấm áp",
+    "brideBio": "Cô gái dịu dàng"
+  },
+  "albums": [
+    "/uploads/1787497743720_TVBA0743.JPG",
+    "/uploads/1787497743753_TVBA0774.JPG",
+    "/uploads/1787497744184_TVBA9600.JPG",
+    "/uploads/1787497744548_TVBA9842.JPG",
+    "/uploads/1787497744571_TVBA9858.JPG",
+    "/uploads/1787497744596_TVBA9926.JPG"
+  ],
+  "links": [
+    {
+      "id": "eaada681-7b0d-4b59-8383-c9474d521841",
+      "guestName": "Con Chó",
+      "slug": "con-cho-ab0898f3-053b-4e9f-8d3c-ae4ef0eb5a64",
+      "eventId": "lao-cai"
+    }
+  ],
+  "stories": [
+    {
+      "id": "s1",
+      "date": "Mùa thu 2024",
+      "title": "Lần Đầu Gặp Gỡ",
+      "content": "Một buổi chiều thu nhẹ nhàng, ánh mắt ta chạm nhau giữa quán cà phê quen thuộc. Đó là khoảnh khắc chúng ta biết mình thuộc về nhau.",
+      "imageUrl": "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=2070&auto=format&fit=crop"
+    },
+    {
+      "id": "s2",
+      "date": "14 Tháng 2, 2026",
+      "title": "Lời Cầu Hôn Lãng Mạn",
+      "content": "Dưới ánh nến lung linh và giai điệu du dương, anh đã trao em chiếc nhẫn và một lời hứa đi cùng nhau đến suốt cuộc đời.",
+      "imageUrl": "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=2070&auto=format&fit=crop"
+    }
+  ],
+  "itinerary": [
+    {
+      "id": "i1",
+      "time": "09:30",
+      "event": "Đón Khách"
+    },
+    {
+      "id": "i2",
+      "time": "10:30",
+      "event": "Cử Hành Hôn Lễ"
+    },
+    {
+      "id": "i3",
+      "time": "11:30",
+      "event": "Khai Tiệc"
+    },
+    {
+      "id": "i4",
+      "time": "13:30",
+      "event": "Chụp Hình Kỷ Niệm"
+    }
+  ],
+  "dressCode": [
+    "#FFFFFF",
+    "#F5F5DC",
+    "#D2B48C"
+  ],
+  "mapUrl": "<iframe src=\"https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d117987.33274922568!2d104.17584827753409!3d22.462720223134117!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x36cd1dd9e754de1f%3A0xbfc5e0e34825b9a4!2zQuG6o28gTmhhaSwgTMOgbyBDYWksIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1787500471629!5m2!1svi!2s\" width=\"600\" height=\"450\" style=\"border:0;\" allowfullscreen=\"\" loading=\"lazy\" referrerpolicy=\"strict-origin-when-cross-origin\"></iframe>",
+  "rsvps": [
+    {
+      "name": "TEST",
+      "attending": "yes",
+      "count": 1,
+      "message": "CHÚC MỪNG",
+      "id": "1787500960162",
+      "submittedAt": "2026-08-23T16:02:40.162Z"
+    },
+    {
+      "name": "test",
+      "attending": "yes",
+      "count": 1,
+      "message": "sfa",
+      "id": "1789746637664",
+      "submittedAt": "2026-09-18T15:50:37.664Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "lao-cai",
+      "name": "Lào Cai",
+      "date": "2026-10-18T09:30:00",
+      "lunarDate": "09 tháng 09 năm Bính Ngọ",
+      "venue": "Tư gia nhà trai",
+      "address": "Khởi Bung - Bảo Nhai - Lào Cai",
+      "mapUrl": "<iframe src=\"https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d117987.33274922568!2d104.17584827753409!3d22.462720223134117!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x36cd1dd9e754de1f%3A0xbfc5e0e34825b9a4!2zQuG6o28gTmhhaSwgTMOgbyBDYWksIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1787500471629!5m2!1svi!2s\" width=\"600\" height=\"450\" style=\"border:0;\" allowfullscreen=\"\" loading=\"lazy\" referrerpolicy=\"strict-origin-when-cross-origin\"></iframe>",
+      "itinerary": [
+        {
+          "id": "i1",
+          "time": "09:30",
+          "event": "Đón Khách"
+        },
+        {
+          "id": "i2",
+          "time": "10:30",
+          "event": "Cử Hành Hôn Lễ"
+        },
+        {
+          "id": "i3",
+          "time": "11:30",
+          "event": "Khai Tiệc"
+        },
+        {
+          "id": "i4",
+          "time": "13:30",
+          "event": "Chụp Hình Kỷ Niệm"
+        }
+      ]
+    },
+    {
+      "id": "thanh-hoa",
+      "name": "Thanh Hóa",
+      "date": "",
+      "lunarDate": "",
+      "venue": "",
+      "address": "",
+      "mapUrl": "",
+      "subEvents": [
+        {
+          "id": "tiec",
+          "name": "Mời Dự Tiệc",
+          "date": "2026-10-16T11:00:00",
+          "lunarDate": "07 tháng 09 năm Bính Ngọ",
+          "venue": "Trung Tâm Tổ Chức Sự Kiện Dạ Lan Event",
+          "address": "Số 87 Đường Lê Hoàn, Phường Hạc Thành, Tỉnh Thanh Hóa",
+          "mapUrl": ""
+        },
+        {
+          "id": "le",
+          "name": "Lễ Nạp Tài",
+          "date": "2026-10-17T09:00:00",
+          "lunarDate": "08 tháng 09 năm Bính Ngọ",
+          "venue": "Tư Gia Nhà Gái",
+          "address": "Số 25 - Ngõ Nam Kỳ 40 - Phường Hàm Rồng - Tỉnh Thanh Hóa",
+          "mapUrl": ""
+        }
+      ],
+      "itinerary": []
+    },
+    {
+      "id": "ha-noi",
+      "name": "Hà Nội",
+      "date": "",
+      "lunarDate": "",
+      "venue": "",
+      "address": "",
+      "mapUrl": "",
+      "itinerary": []
+    }
+  ],
+  "revision": 7
+}
