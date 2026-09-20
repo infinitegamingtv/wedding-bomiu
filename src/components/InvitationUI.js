@@ -373,9 +373,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <img src={story.imageUrl} alt={story.title} loading="lazy" decoding="async" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
 
         {albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
-          <div className={styles.masonryGrid}>
+          <div className={styles.horizontalScroll}>
             {albums.map((url, index) => (
-              <button key={index} className={styles.masonryItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
+              <button key={index} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
                 <img src={url} alt={`Ảnh cưới ${index + 1}`} loading="lazy" decoding="async" />
               </button>
             ))}

@@ -85,10 +85,11 @@
 .storyCard:nth-child(even) > img { order: 2; border-radius: 8px 100px 8px 8px; }
 .storyCard h3 { font-size: 1.6rem; font-weight: 400; line-height: 1.4; margin: 12px 0 16px; }
 .storyCard p:last-child { font-size: .95rem; line-height: 1.9; color: #6c614f; }
-.masonryGrid { column-count: 2; column-gap: 16px; max-width: 900px; margin: 32px auto 0; }
-.masonryItem { break-inside: avoid; margin-bottom: 16px; display: block; width: 100%; padding: 8px; background: #fffcf5; border: 1px solid #e0d4c2; border-radius: 12px; box-shadow: 0 8px 24px rgba(89, 67, 41, 0.07); cursor: zoom-in; box-sizing: border-box; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.masonryItem:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(89, 67, 41, 0.1); }
-.masonryItem img { display: block; width: 100%; height: auto; border-radius: 6px; background: #eee6da; object-fit: cover; }
+.horizontalScroll { display: flex; overflow-x: auto; gap: 16px; margin: 32px -20px 0; padding: 16px 20px 32px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.horizontalScroll::-webkit-scrollbar { display: none; }
+.scrollItem { flex: 0 0 75%; max-width: 320px; scroll-snap-align: center; display: block; padding: 8px; background: #fffcf5; border: 1px solid #e0d4c2; border-radius: 12px; box-shadow: 0 8px 24px rgba(89, 67, 41, 0.07); cursor: zoom-in; box-sizing: border-box; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.scrollItem:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(89, 67, 41, 0.1); }
+.scrollItem img { display: block; width: 100%; height: auto; border-radius: 6px; background: #eee6da; object-fit: cover; aspect-ratio: 3/4; }
 .rsvpSection { display: grid; grid-template-columns: .9fr 1.1fr; gap: 64px; text-align: left; align-items: start; }
 .rsvpHeading { padding-top: 26px; min-width: 0; }
 .rsvpHeading > p:last-of-type { color: #716652; line-height: 1.9; }
