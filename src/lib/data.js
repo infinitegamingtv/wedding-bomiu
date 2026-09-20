@@ -17,7 +17,10 @@ async function readFile(file, fallback) {
   catch (error) { if (error.code === 'ENOENT') return fallback; throw error; }
 }
 async function rawContent() {
-  if (process.env.VERCEL && !redis) throw Object.assign(new Error('Chưa cấu hình kho dữ liệu trên hosting.'), { status: 503 });
+  if (process.env.VERCEL && !redis) {
+    const keys = Object.keys(process.env).filter(k => k.includes('UPSTASH') || k.includes('KV')).join(', ');
+    throw Object.assign(new Error(\`Chưa cấu hình kho dữ liệu. Có URL: \${!!redisUrl}, Có Token: \${!!redisToken}. Các biến hiện có: \${keys}\`), { status: 503 });
+  }
   // Remote outages must not silently fall back to stale local data.
   if (redis) {
     const remote = await redis.get('wedding-data');
