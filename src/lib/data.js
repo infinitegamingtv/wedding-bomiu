@@ -19,7 +19,7 @@ async function readFile(file, fallback) {
 async function rawContent() {
   if (process.env.VERCEL && !redis) {
     const keys = Object.keys(process.env).filter(k => k.includes('UPSTASH') || k.includes('KV')).join(', ');
-    throw Object.assign(new Error(\`Chưa cấu hình kho dữ liệu. Có URL: \${!!redisUrl}, Có Token: \${!!redisToken}. Các biến hiện có: \${keys}\`), { status: 503 });
+    throw Object.assign(new Error(`Chưa cấu hình kho dữ liệu. Có URL: ${!!redisUrl}, Có Token: ${!!redisToken}. Các biến hiện có: ${keys}`), { status: 503 });
   }
   // Remote outages must not silently fall back to stale local data.
   if (redis) {
