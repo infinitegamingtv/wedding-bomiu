@@ -145,7 +145,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   useEffect(() => {
     if (tracksCount > 1) setTrack(Math.floor(Math.random() * tracksCount));
   }, [tracksCount]);
-  const [album, setAlbum] = useState(0);
+  
   const [zoom, setZoom] = useState(null);
   const [status, setStatus] = useState('idle');
   
@@ -373,15 +373,12 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <img src={story.imageUrl} alt={story.title} loading="lazy" decoding="async" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
 
         {albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
-          <div className={styles.galleryWrapper}>
-            <button className={`${styles.secondaryButton} ${styles.galleryNavBtn}`} disabled={album === 0} onClick={() => setAlbum(index => index - 1)} aria-label="Ảnh trước"><InteractiveIcon defaultIcon={ArrowLeft} hoverIcon={ArrowLeft} size={20} /></button>
-            <div className={styles.galleryPhotoWrapper}>
-              <button className={styles.galleryPhoto} aria-label={`Phóng to ảnh cưới ${album + 1}`} onClick={() => setZoom(albums[album])}>
-                <img src={albums[album]} alt={`Ảnh cưới ${album + 1}`} loading="lazy" decoding="async" />
+          <div className={styles.masonryGrid}>
+            {albums.map((url, index) => (
+              <button key={index} className={styles.masonryItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
+                <img src={url} alt={`Ảnh cưới ${index + 1}`} loading="lazy" decoding="async" />
               </button>
-              <p className={styles.galleryCounter} aria-live="polite">{String(album + 1).padStart(2, '0')} <span className={styles.muted}>/ {String(albums.length).padStart(2, '0')}</span></p>
-            </div>
-            <button className={`${styles.secondaryButton} ${styles.galleryNavBtn}`} disabled={album === albums.length - 1} onClick={() => setAlbum(index => index + 1)} aria-label="Ảnh tiếp"><InteractiveIcon defaultIcon={ArrowRight} hoverIcon={ArrowRight} size={20} /></button>
+            ))}
           </div>
         </FadeInSection>}
 
