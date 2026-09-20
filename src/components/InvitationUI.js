@@ -148,6 +148,13 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   
   const [zoom, setZoom] = useState(null);
   const [status, setStatus] = useState('idle');
+  const scrollRef = useRef(null);
+  const scrollGallery = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = window.innerWidth > 768 ? 600 : 300;
+      scrollRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
   
   const [activeTabId, setActiveTabId] = useState(initialEventId || events[0]?.id || '');
   const [form, setForm] = useState({ name: guestName || '', attending: 'yes', eventIds: [initialEventId || events[0]?.id || ''], count: 1, message: '' });
@@ -373,12 +380,20 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <img src={story.imageUrl} alt={story.title} loading="lazy" decoding="async" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
 
         {albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
-          <div className={styles.horizontalScroll}>
-            {albums.map((url, index) => (
-              <button key={index} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
-                <img src={url} alt={`Ảnh cưới ${index + 1}`} loading="lazy" decoding="async" />
-              </button>
-            ))}
+          <div className={styles.galleryContainer}>
+            <button className={`${styles.scrollBtn} ${styles.scrollBtnLeft}`} onClick={() => scrollGallery('left')} aria-label="Cuộn trái">
+              <InteractiveIcon defaultIcon={ArrowLeft} size={24} />
+            </button>
+            <div className={styles.horizontalScroll} ref={scrollRef}>
+              {albums.map((url, index) => (
+                <button key={index} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
+                  <img src={url} alt={`Ảnh cưới ${index + 1}`} loading="lazy" decoding="async" />
+                </button>
+              ))}
+            </div>
+            <button className={`${styles.scrollBtn} ${styles.scrollBtnRight}`} onClick={() => scrollGallery('right')} aria-label="Cuộn phải">
+              <InteractiveIcon defaultIcon={ArrowRight} size={24} />
+            </button>
           </div>
         </FadeInSection>}
 

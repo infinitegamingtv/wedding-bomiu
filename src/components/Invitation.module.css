@@ -85,8 +85,13 @@
 .storyCard:nth-child(even) > img { order: 2; border-radius: 8px 100px 8px 8px; }
 .storyCard h3 { font-size: 1.6rem; font-weight: 400; line-height: 1.4; margin: 12px 0 16px; }
 .storyCard p:last-child { font-size: .95rem; line-height: 1.9; color: #6c614f; }
-.horizontalScroll { display: flex; overflow-x: auto; gap: 16px; margin: 32px -20px 0; padding: 16px 20px 32px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.galleryContainer { position: relative; margin: 32px -20px 0; }
+.horizontalScroll { display: flex; overflow-x: auto; gap: 16px; padding: 16px 20px 32px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .horizontalScroll::-webkit-scrollbar { display: none; }
+.scrollBtn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.95); border: 1px solid #e0d4c2; box-shadow: 0 4px 12px rgba(89, 67, 41, 0.15); display: flex; align-items: center; justify-content: center; color: var(--color-gold); cursor: pointer; transition: all 0.2s ease; }
+.scrollBtn:hover { background: #fff; transform: translateY(-50%) scale(1.05); box-shadow: 0 6px 16px rgba(89, 67, 41, 0.2); }
+.scrollBtnLeft { left: 10px; }
+.scrollBtnRight { right: 10px; }
 .scrollItem { flex: 0 0 75%; max-width: 320px; scroll-snap-align: center; display: block; padding: 8px; background: #fffcf5; border: 1px solid #e0d4c2; border-radius: 12px; box-shadow: 0 8px 24px rgba(89, 67, 41, 0.07); cursor: zoom-in; box-sizing: border-box; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .scrollItem:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(89, 67, 41, 0.1); }
 .scrollItem img { display: block; width: 100%; height: auto; border-radius: 6px; background: #eee6da; object-fit: cover; aspect-ratio: 3/4; }
@@ -171,3 +176,4 @@
 }
 @media (max-width: 360px) { .navBar a { padding: 10px; font-size: .7rem; } .envelopeCard { padding: 40px 20px 28px; } .envNames { font-size: 3rem; } }
 @media (prefers-reduced-motion: reduce) { .flowers { display: none; } .primaryButton, .secondaryButton, .heroCta, .navBar a { transition: none; } .section { opacity: 1; transform: translateY(0); transition: none; } }
+@media (hover: none) and (pointer: coarse) { .scrollBtn { display: none; } }
