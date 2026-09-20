@@ -208,7 +208,12 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   }
 
   const mapUrl = selectedEvent.mapUrl;
-  const date = weddingDate(selectedEvent.date);
+  let mainDateStr = selectedEvent.date;
+  if (!mainDateStr && selectedEvent.subEvents?.length) {
+    const firstSub = selectedEvent.subEvents.find(s => s.date);
+    if (firstSub) mainDateStr = firstSub.date;
+  }
+  const date = weddingDate(mainDateStr);
   const validDate = Number.isFinite(date.getTime());
   const embed = mapEmbed(mapUrl);
   const directions = mapUrl && /^https?:\/\//.test(mapUrl) && !mapUrl.includes('/embed') ? mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.address || selectedEvent.venue || '')}`;
