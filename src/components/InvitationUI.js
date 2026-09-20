@@ -106,11 +106,45 @@ function FadeInSection({ children, id, className = '' }) {
   );
 }
 
+const Countdown = ({ date }) => {
+  const [timeLeft, setTimeLeft] = useState(null);
+  useEffect(() => {
+    const target = new Date(date).getTime();
+    const update = () => {
+      const diff = target - new Date().getTime();
+      if (diff <= 0) return setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+      setTimeLeft({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000)
+      });
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [date]);
+  if (!timeLeft || (timeLeft.d === 0 && timeLeft.h === 0 && timeLeft.m === 0 && timeLeft.s === 0)) return null;
+  return (
+    <div className={styles.countdown}>
+      <div className={styles.cdBox}><strong>{timeLeft.d}</strong><span>Ngày</span></div>
+      <div className={styles.cdBox}><strong>{timeLeft.h}</strong><span>Giờ</span></div>
+      <div className={styles.cdBox}><strong>{timeLeft.m}</strong><span>Phút</span></div>
+      <div className={styles.cdBox}><strong>{timeLeft.s}</strong><span>Giây</span></div>
+    </div>
+  );
+};
+
 export default function InvitationUI({ data, guestName, guestSlug, initialEventId }) {
   let { invitation, albums = [], stories = [], events = [], rsvps = [], texts = {} } = data;
   const [opened, setOpened] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [track, setTrack] = useState(0);
+  
+  const tracksCount = invitation.musicTracks?.length || (invitation.musicUrl ? 1 : 0);
+  useEffect(() => {
+    if (tracksCount > 1) setTrack(Math.floor(Math.random() * tracksCount));
+  }, [tracksCount]);
   const [album, setAlbum] = useState(0);
   const [zoom, setZoom] = useState(null);
   const [status, setStatus] = useState('idle');
@@ -234,7 +268,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   };
 
   return <div className={styles.wrapper}>
-    {trackUrl && <audio ref={audio} autoPlay src={trackUrl} preload="auto" loop={tracks.length === 1} onEnded={() => setTrack(index => (index + 1) % tracks.length)} onError={() => setPlaying(false)} />}
+    {trackUrl && <audio ref={audio} autoPlay src={trackUrl} preload="auto" loop={tracksCount === 1} onEnded={() => setTrack(index => tracksCount > 1 ? (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount : 0)} onError={() => setPlaying(false)} />}
     {tracks.length > 0 && <div className={styles.musicControl}>
       <button onClick={() => setPlaying(value => !value)} aria-pressed={playing} aria-label={playing ? 'Tắt nhạc' : 'Bật nhạc'}><MorphIcon icon={playing ? Pause : Music} size={16} /> {playing ? 'Tắt nhạc' : 'Bật nhạc'}</button>
       {tracks.length > 1 && <select aria-label="Chọn nhạc" value={track} onChange={e => { setTrack(Number(e.target.value)); setPlaying(true); }}>{tracks.map((item, index) => <option key={index} value={index}>{item.name || `Bài ${index + 1}`}</option>)}</select>}
@@ -263,7 +297,8 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           <div className={styles.heroContent}>
             <p className={styles.eyebrow}>{texts.heroSubtitle || 'Lễ Thành Hôn'}</p>
             <h1 ref={heading} tabIndex={-1} className={styles.heroNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
-            {validDate && <p className={styles.heroDate}>{formatDate(date).replaceAll('/', ' · ')}</p>}
+            {validDate && <p className={styles.heroDate}>{formatDate(date).replaceAll('/', ' \u2022 ')}</p>}
+            {validDate && <Countdown date={date} />}
             <p className={styles.heroLocation}>{selectedEvent.venue || selectedEvent.name}</p>
             <a className={styles.heroCta} href="#invite">Cùng chung vui <InteractiveIcon defaultIcon={ArrowDown} hoverIcon={ArrowDown} size={16} style={{ marginLeft: 8 }} /></a>
           </div>
