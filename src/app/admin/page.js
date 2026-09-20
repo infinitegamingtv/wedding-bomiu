@@ -153,7 +153,10 @@ export default function AdminPage() {
         const url = await uploadFile(file);
         const name = file.name.replace(/\.[^.]+$/, '');
         newTracks.push({ name, url });
-      } catch(err) { console.error('Failed to upload:', file.name); }
+      } catch(err) { 
+        alert('Lỗi tải tệp ' + file.name + ': ' + err.message);
+        console.error('Failed to upload:', file.name, err);
+      }
     }
     setData(prev => ({
       ...prev,
@@ -422,7 +425,7 @@ export default function AdminPage() {
             {(data.invitation.musicTracks || []).length > 0 && (
               <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px'}}>
                 {data.invitation.musicTracks.map((track, i) => (
-                  <li key={i} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 15px', background: '#f9f9f9', borderRadius: '8px', borderLeft: '3px solid #C5A880'}}>
+                  <li key={i} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 15px', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #eaeaea', boxShadow: '0 2px 8px rgba(197,168,128,0.1)'}}>
                     <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                       <span style={{color: '#C5A880', fontWeight: 'bold'}}>♫</span>
                       <span>{track.name || `Bài ${i+1}`}</span>
