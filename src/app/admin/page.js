@@ -178,6 +178,14 @@ export default function AdminPage() {
     });
   };
 
+  const handleTrackNameChange = (index, value) => {
+    setData(prev => {
+      const newTracks = [...(prev.invitation.musicTracks || [])];
+      newTracks[index] = { ...newTracks[index], name: value };
+      return { ...prev, invitation: { ...prev.invitation, musicTracks: newTracks } };
+    });
+  };
+
   const handleStoryChange = (index, field, value) => {
     setData(prev => {
       const newStories = [...prev.stories];
@@ -426,11 +434,11 @@ export default function AdminPage() {
               <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px'}}>
                 {data.invitation.musicTracks.map((track, i) => (
                   <li key={i} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 15px', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #eaeaea', boxShadow: '0 2px 8px rgba(197,168,128,0.1)'}}>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                      <span style={{color: '#C5A880', fontWeight: 'bold'}}>♫</span>
-                      <span>{track.name || `Bài ${i+1}`}</span>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '10px', flex: 1}}>
+                      <span style={{color: '#C5A880', fontWeight: 'bold'}}>🎵</span>
+                      <input className={styles.input} style={{ flex: 1, padding: '4px 8px', margin: 0 }} value={track.name || `Bài ${i+1}`} onChange={(e) => handleTrackNameChange(i, e.target.value)} />
                     </div>
-                    <button className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{padding: '4px 10px'}} onClick={() => removeTrack(i)}>Xóa</button>
+                    <button className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{padding: '4px 10px', marginLeft: '12px'}} onClick={() => removeTrack(i)}>Xóa</button>
                   </li>
                 ))}
               </ul>
