@@ -135,6 +135,61 @@ const Countdown = ({ date }) => {
     </div>
   );
 };
+const LuxuryGiftBox = ({ idSuffix = '1' }) => (
+  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+    <defs>
+      <linearGradient id={`goldBase-${idSuffix}`} x1="0" y1="45" x2="100" y2="95" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#C29B57"/>
+        <stop offset="50%" stopColor="#F9E5AD"/>
+        <stop offset="100%" stopColor="#8A631C"/>
+      </linearGradient>
+      <linearGradient id={`goldLid-${idSuffix}`} x1="0" y1="30" x2="100" y2="45" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#EAD198"/>
+        <stop offset="20%" stopColor="#FFF3C7"/>
+        <stop offset="50%" stopColor="#C29B57"/>
+        <stop offset="80%" stopColor="#EAD198"/>
+        <stop offset="100%" stopColor="#755212"/>
+      </linearGradient>
+      <linearGradient id={`lidShadow-${idSuffix}`} x1="50" y1="45" x2="50" y2="52" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#302008" stopOpacity="0.7"/>
+        <stop offset="100%" stopColor="#302008" stopOpacity="0"/>
+      </linearGradient>
+      <linearGradient id={`ribbonV-${idSuffix}`} x1="42" y1="30" x2="58" y2="95" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FDF7E7"/>
+        <stop offset="50%" stopColor="#D8BA75"/>
+        <stop offset="100%" stopColor="#9C7729"/>
+      </linearGradient>
+      <linearGradient id={`ribbonH-${idSuffix}`} x1="15" y1="65" x2="85" y2="65" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#9C7729"/>
+        <stop offset="50%" stopColor="#FDF7E7"/>
+        <stop offset="100%" stopColor="#D8BA75"/>
+      </linearGradient>
+      <filter id={`dropShadow-${idSuffix}`} x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#2b1a07" floodOpacity="0.5"/>
+      </filter>
+      <filter id={`bowShadow-${idSuffix}`} x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#1a0f02" floodOpacity="0.4"/>
+      </filter>
+    </defs>
+    <g filter={`url(#dropShadow-${idSuffix})`}>
+      <rect x="15" y="45" width="70" height="50" rx="3" fill={`url(#goldBase-${idSuffix})`}/>
+      <rect x="15" y="60" width="70" height="15" fill={`url(#ribbonH-${idSuffix})`}/>
+      <rect x="15" y="45" width="70" height="7" fill={`url(#lidShadow-${idSuffix})`}/>
+      <rect x="11" y="32" width="78" height="14" rx="3" fill={`url(#goldLid-${idSuffix})`}/>
+      <rect x="42" y="45" width="16" height="50" fill={`url(#ribbonV-${idSuffix})`}/>
+      <rect x="42" y="32" width="16" height="14" fill={`url(#ribbonV-${idSuffix})`}/>
+      <g filter={`url(#bowShadow-${idSuffix})`}>
+        <path d="M 50 34 Q 30 55, 18 68 Q 30 70, 46 42 Z" fill="#8C661D"/>
+        <path d="M 50 34 Q 70 55, 82 68 Q 70 70, 54 42 Z" fill="#8C661D"/>
+        <path d="M 50 34 C 20 -5, -5 30, 40 38 Z" fill={`url(#ribbonH-${idSuffix})`}/>
+        <path d="M 46 36 C 25 15, 15 25, 35 35 Z" fill="#785513"/>
+        <path d="M 50 34 C 80 -5, 105 30, 60 38 Z" fill={`url(#ribbonH-${idSuffix})`}/>
+        <path d="M 54 36 C 75 15, 85 25, 65 35 Z" fill="#785513"/>
+        <ellipse cx="50" cy="35" rx="8" ry="7" fill={`url(#ribbonV-${idSuffix})`}/>
+      </g>
+    </g>
+  </svg>
+);
 
 export default function InvitationUI({ data, guestName, guestSlug, initialEventId }) {
   let { invitation, albums = [], stories = [], events = [], rsvps = [], texts = {} } = data;
@@ -430,46 +485,13 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
             <div className={styles.giftBoxesWrapper} onClick={() => setGiftOpened(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setGiftOpened(true)}>
               <div className={styles.boxesContainer}>
                 <div className={`${styles.floatingBox} ${styles.boxLeft}`}>
-                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="15" y="45" width="70" height="50" rx="4" fill="#C99B4E"/>
-                    <rect x="10" y="32" width="80" height="15" rx="3" fill="#E0B363"/>
-                    <rect x="15" y="47" width="70" height="4" fill="#A87E38"/>
-                    <rect x="42" y="32" width="16" height="63" fill="#FFF8EB"/>
-                    <rect x="42" y="47" width="16" height="4" fill="#EADCC2"/>
-                    <path d="M 50 33 C 25 5, 5 25, 45 33 Z" fill="#FFF8EB"/>
-                    <path d="M 45 33 C 20 10, 10 25, 45 33 Z" fill="#EADCC2" opacity="0.6"/>
-                    <path d="M 50 33 C 75 5, 95 25, 55 33 Z" fill="#FFF8EB"/>
-                    <path d="M 55 33 C 80 10, 90 25, 55 33 Z" fill="#EADCC2" opacity="0.6"/>
-                    <circle cx="50" cy="31" r="6" fill="#F4EADB"/>
-                  </svg>
+                  <LuxuryGiftBox idSuffix="left" />
                 </div>
                 <div className={`${styles.floatingBox} ${styles.boxCenter}`}>
-                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="15" y="45" width="70" height="50" rx="4" fill="#D3A758"/>
-                    <rect x="10" y="32" width="80" height="15" rx="3" fill="#EBC274"/>
-                    <rect x="15" y="47" width="70" height="4" fill="#B38944"/>
-                    <rect x="42" y="32" width="16" height="63" fill="#FFF8EB"/>
-                    <rect x="42" y="47" width="16" height="4" fill="#EADCC2"/>
-                    <path d="M 50 33 C 25 5, 5 25, 45 33 Z" fill="#FFF8EB"/>
-                    <path d="M 45 33 C 20 10, 10 25, 45 33 Z" fill="#EADCC2" opacity="0.6"/>
-                    <path d="M 50 33 C 75 5, 95 25, 55 33 Z" fill="#FFF8EB"/>
-                    <path d="M 55 33 C 80 10, 90 25, 55 33 Z" fill="#EADCC2" opacity="0.6"/>
-                    <circle cx="50" cy="31" r="6" fill="#F4EADB"/>
-                  </svg>
+                  <LuxuryGiftBox idSuffix="center" />
                 </div>
                 <div className={`${styles.floatingBox} ${styles.boxRight}`}>
-                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="15" y="45" width="70" height="50" rx="4" fill="#B88A3F"/>
-                    <rect x="10" y="32" width="80" height="15" rx="3" fill="#CDA150"/>
-                    <rect x="15" y="47" width="70" height="4" fill="#946C2D"/>
-                    <rect x="42" y="32" width="16" height="63" fill="#FFF8EB"/>
-                    <rect x="42" y="47" width="16" height="4" fill="#EADCC2"/>
-                    <path d="M 50 33 C 25 5, 5 25, 45 33 Z" fill="#FFF8EB"/>
-                    <path d="M 45 33 C 20 10, 10 25, 45 33 Z" fill="#EADCC2" opacity="0.6"/>
-                    <path d="M 50 33 C 75 5, 95 25, 55 33 Z" fill="#FFF8EB"/>
-                    <path d="M 55 33 C 80 10, 90 25, 55 33 Z" fill="#EADCC2" opacity="0.6"/>
-                    <circle cx="50" cy="31" r="6" fill="#F4EADB"/>
-                  </svg>
+                  <LuxuryGiftBox idSuffix="right" />
                 </div>
               </div>
               <p className={styles.giftHint}>Chạm vào hộp quà để mở</p>
