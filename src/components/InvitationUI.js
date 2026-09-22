@@ -449,6 +449,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         <main className={styles.mainContent}>
         <section id="hero" className={styles.hero} style={invitation.heroBgUrl ? { backgroundImage: `url("${invitation.heroBgUrl}")` } : undefined}>
           <div className={styles.heroContent}>
+            {invitation.logoUrl && <img className={styles.heroLogo} src={invitation.logoUrl} alt="" />}
             <p className={styles.eyebrow}>{texts.heroSubtitle || 'Lễ Thành Hôn'}</p>
             <h1 ref={heading} tabIndex={-1} className={styles.heroNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
             {validDate && <p className={styles.heroDate}>{formatDate(date).replaceAll('/', ' \u2022 ')}</p>}

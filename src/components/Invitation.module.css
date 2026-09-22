@@ -29,7 +29,8 @@
 .envelopeCard { position: relative; width: min(100%, 540px); padding: 46px 32px 40px; text-align: center; background: #fffcf5; border: 1px solid #e0d4c2; border-radius: 8px; box-shadow: 0 24px 80px #1a120e66; z-index: 10; }
 .envelopeCard::before { content: ''; position: absolute; inset: 10px; border: 1px solid #ac906b44; border-radius: 4px; pointer-events: none; }
 .envelopeCard > .eyebrow { font-size: .62rem; letter-spacing: .16em; }
-.cardLogo { display: block; max-width: 100px; height: 58px; object-fit: contain; margin: 22px auto 12px; }
+.cardLogo { display: block; max-width: 280px; height: auto; max-height: 140px; object-fit: contain; margin: 20px auto 12px; }
+.heroLogo { display: block; max-width: 320px; height: auto; max-height: 180px; object-fit: contain; margin: 0 auto 16px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
 .envNames, .heroNames, .footerNames { font-family: var(--font-fleur), cursive; font-weight: 400; }
 .envNames { font-size: clamp(3.1rem, 8vw, 4.3rem); line-height: 1.1; margin: 18px 0 24px; }
 .envNames span, .heroNames span, .footerNames span { display: block; font-size: .5em; margin: 5px 0; }
