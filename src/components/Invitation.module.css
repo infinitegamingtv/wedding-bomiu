@@ -129,7 +129,15 @@
 .guestbookEmoji { font-size: .55em; white-space: nowrap; }
 .guestbookPhoto { width: min(100%, 680px); aspect-ratio: 16 / 9; object-fit: cover; border-radius: 16px; }
 .giftSection { max-width: 700px; }
-.giftQr { display: block; width: min(240px, 100%); aspect-ratio: 1; object-fit: contain; margin: 28px auto 0; padding: 18px; border: 1px solid #d7c7b0; border-radius: 16px; background: white; }
+.lixiWrapper { display: flex; flex-direction: column; align-items: center; margin: 32px auto 24px; cursor: pointer; outline: none; }
+.lixiShake { display: inline-block; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: pulseLixi 2s infinite; }
+.lixiWrapper:hover .lixiShake, .lixiWrapper:focus .lixiShake { transform: scale(1.05) rotate(-3deg); animation: none; }
+@keyframes pulseLixi { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.03) rotate(1deg); } 100% { transform: scale(1) rotate(0deg); } }
+.lixiHint { margin-top: 20px; font-size: 0.85rem; color: #b71c1c; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; animation: pulseText 2.5s infinite; }
+@keyframes pulseText { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+.qrReveal { animation: fadeInReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes fadeInReveal { 0% { opacity: 0; transform: translateY(-20px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+.giftQr { display: block; width: min(240px, 100%); aspect-ratio: 1; object-fit: contain; margin: 24px auto 0; padding: 18px; border: 1px solid #d7c7b0; border-radius: 16px; background: white; }
 .footer { text-align: center; padding: 64px 24px 12px; background: #e9dfcf66; }
 .footerNames { font-size: clamp(2.5rem, 5vw, 3.5rem); color: var(--color-gold); margin: 18px 0 24px; }
 .footer > a { font-size: .8rem; display: inline-flex; align-items: center; min-height: 44px; }

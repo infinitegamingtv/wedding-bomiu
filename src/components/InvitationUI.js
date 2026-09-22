@@ -140,6 +140,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   let { invitation, albums = [], stories = [], events = [], rsvps = [], texts = {} } = data;
   const [opened, setOpened] = useState(false);
   const [bursting, setBursting] = useState(false);
+  const [giftOpened, setGiftOpened] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [track, setTrack] = useState(0);
   
@@ -423,7 +424,31 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
 
         <FadeInSection id="guestbook"><p className={styles.eyebrow}>YÊU THƯƠNG ĐƯỢC VIẾT THÀNH LỜI</p><h2 className={styles.sectionTitle}>{texts.guestbookTitle || 'Sổ Lưu Bút'} <span className={styles.guestbookEmoji}>🍀💚</span></h2>{invitation.guestbookPhotoUrl && <img className={styles.guestbookPhoto} src={invitation.guestbookPhotoUrl} alt="Kỷ niệm của chúng mình" loading="lazy" />}<div className={styles.wishes}>{wishes.length ? wishes.map((wish, index) => <blockquote key={wish.id || index}><p>“{wish.message}”</p><cite>— {wish.name}</cite></blockquote>) : <p className={styles.intro}>Hãy là người đầu tiên gửi lời chúc cho chúng mình nhé.</p>}</div><a className={styles.secondaryButton} href="#rsvp">Gửi một lời chúc</a></FadeInSection>
 
-        {invitation.qrCodeUrl && <FadeInSection className={styles.giftSection}><h2 className={styles.sectionTitle}>{texts.giftTitle || 'Gửi Tặng Yêu Thương'}</h2><p className={styles.intro}>{invitation.message}</p><img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" /></FadeInSection>}
+        {invitation.qrCodeUrl && <FadeInSection className={styles.giftSection}>
+          <h2 className={styles.sectionTitle}>GỬI QUÀ MỪNG</h2>
+          {!giftOpened ? (
+            <div className={styles.lixiWrapper} onClick={() => setGiftOpened(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setGiftOpened(true)}>
+              <div className={styles.lixiShake}>
+                <svg width="120" height="170" viewBox="0 0 120 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="5" y="5" width="110" height="160" rx="6" fill="#9e1111"/>
+                  <path d="M5 45 Q 60 70 115 45 L 115 159 Q 115 165 109 165 L 11 165 Q 5 165 5 159 Z" fill="#d32f2f"/>
+                  <path d="M5 11 Q 5 5 11 5 L 109 5 Q 115 5 115 11 L 115 45 Q 60 70 5 45 Z" fill="#b71c1c"/>
+                  <path d="M5 45 Q 60 70 115 45" stroke="#f4b41a" strokeWidth="1.5" fill="none"/>
+                  <circle cx="60" cy="55" r="16" fill="#f4b41a"/>
+                  <rect x="55" y="50" width="10" height="10" fill="#d32f2f"/>
+                  <text x="60" y="105" fill="#f4b41a" fontSize="16" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">MỪNG</text>
+                  <text x="60" y="127" fill="#f4b41a" fontSize="16" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">CƯỚI</text>
+                </svg>
+              </div>
+              <p className={styles.lixiHint}>Chạm vào lì xì để mở</p>
+            </div>
+          ) : (
+            <div className={styles.qrReveal}>
+              <p className={styles.intro} style={{ marginBottom: '16px' }}>Quét QR để gửi yêu thương trực tiếp tới cô dâu và chú rể</p>
+              <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" />
+            </div>
+          )}
+        </FadeInSection>}
         <footer className={styles.footer}><span className={styles.eyebrow}>CẢM ƠN VÌ LÀ MỘT PHẦN NGÀY VUI</span><p className={styles.footerNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</p><button className={styles.secondaryButton} onClick={copyLink}><InteractiveIcon defaultIcon={Copy} isActive={!!copyStatus} activeIcon={Check} size={16} style={{ marginRight: 6 }} /> Sao chép đường dẫn thiệp</button><p className={styles.copyStatus} role="status">{copyStatus}</p><a href="#hero" style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Về đầu trang <InteractiveIcon defaultIcon={ArrowUp} hoverIcon={ArrowUp} size={16} /></a></footer>
       </main>
     </div>
