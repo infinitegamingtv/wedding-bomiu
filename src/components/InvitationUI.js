@@ -427,20 +427,52 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         {invitation.qrCodeUrl && <FadeInSection className={styles.giftSection}>
           <h2 className={styles.sectionTitle}>GỬI QUÀ MỪNG</h2>
           {!giftOpened ? (
-            <div className={styles.lixiWrapper} onClick={() => setGiftOpened(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setGiftOpened(true)}>
-              <div className={styles.lixiShake}>
-                <svg width="120" height="170" viewBox="0 0 120 170" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="5" y="5" width="110" height="160" rx="6" fill="#9e1111"/>
-                  <path d="M5 45 Q 60 70 115 45 L 115 159 Q 115 165 109 165 L 11 165 Q 5 165 5 159 Z" fill="#d32f2f"/>
-                  <path d="M5 11 Q 5 5 11 5 L 109 5 Q 115 5 115 11 L 115 45 Q 60 70 5 45 Z" fill="#b71c1c"/>
-                  <path d="M5 45 Q 60 70 115 45" stroke="#f4b41a" strokeWidth="1.5" fill="none"/>
-                  <circle cx="60" cy="55" r="16" fill="#f4b41a"/>
-                  <rect x="55" y="50" width="10" height="10" fill="#d32f2f"/>
-                  <text x="60" y="105" fill="#f4b41a" fontSize="16" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">MỪNG</text>
-                  <text x="60" y="127" fill="#f4b41a" fontSize="16" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">CƯỚI</text>
-                </svg>
+            <div className={styles.giftBoxesWrapper} onClick={() => setGiftOpened(true)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setGiftOpened(true)}>
+              <div className={styles.boxesContainer}>
+                <div className={`${styles.floatingBox} ${styles.boxLeft}`}>
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="15" y="45" width="70" height="50" rx="4" fill="#C99B4E"/>
+                    <rect x="10" y="32" width="80" height="15" rx="3" fill="#E0B363"/>
+                    <rect x="15" y="47" width="70" height="4" fill="#A87E38"/>
+                    <rect x="42" y="32" width="16" height="63" fill="#FFF8EB"/>
+                    <rect x="42" y="47" width="16" height="4" fill="#EADCC2"/>
+                    <path d="M 50 33 C 25 5, 5 25, 45 33 Z" fill="#FFF8EB"/>
+                    <path d="M 45 33 C 20 10, 10 25, 45 33 Z" fill="#EADCC2" opacity="0.6"/>
+                    <path d="M 50 33 C 75 5, 95 25, 55 33 Z" fill="#FFF8EB"/>
+                    <path d="M 55 33 C 80 10, 90 25, 55 33 Z" fill="#EADCC2" opacity="0.6"/>
+                    <circle cx="50" cy="31" r="6" fill="#F4EADB"/>
+                  </svg>
+                </div>
+                <div className={`${styles.floatingBox} ${styles.boxCenter}`}>
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="15" y="45" width="70" height="50" rx="4" fill="#D3A758"/>
+                    <rect x="10" y="32" width="80" height="15" rx="3" fill="#EBC274"/>
+                    <rect x="15" y="47" width="70" height="4" fill="#B38944"/>
+                    <rect x="42" y="32" width="16" height="63" fill="#FFF8EB"/>
+                    <rect x="42" y="47" width="16" height="4" fill="#EADCC2"/>
+                    <path d="M 50 33 C 25 5, 5 25, 45 33 Z" fill="#FFF8EB"/>
+                    <path d="M 45 33 C 20 10, 10 25, 45 33 Z" fill="#EADCC2" opacity="0.6"/>
+                    <path d="M 50 33 C 75 5, 95 25, 55 33 Z" fill="#FFF8EB"/>
+                    <path d="M 55 33 C 80 10, 90 25, 55 33 Z" fill="#EADCC2" opacity="0.6"/>
+                    <circle cx="50" cy="31" r="6" fill="#F4EADB"/>
+                  </svg>
+                </div>
+                <div className={`${styles.floatingBox} ${styles.boxRight}`}>
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="15" y="45" width="70" height="50" rx="4" fill="#B88A3F"/>
+                    <rect x="10" y="32" width="80" height="15" rx="3" fill="#CDA150"/>
+                    <rect x="15" y="47" width="70" height="4" fill="#946C2D"/>
+                    <rect x="42" y="32" width="16" height="63" fill="#FFF8EB"/>
+                    <rect x="42" y="47" width="16" height="4" fill="#EADCC2"/>
+                    <path d="M 50 33 C 25 5, 5 25, 45 33 Z" fill="#FFF8EB"/>
+                    <path d="M 45 33 C 20 10, 10 25, 45 33 Z" fill="#EADCC2" opacity="0.6"/>
+                    <path d="M 50 33 C 75 5, 95 25, 55 33 Z" fill="#FFF8EB"/>
+                    <path d="M 55 33 C 80 10, 90 25, 55 33 Z" fill="#EADCC2" opacity="0.6"/>
+                    <circle cx="50" cy="31" r="6" fill="#F4EADB"/>
+                  </svg>
+                </div>
               </div>
-              <p className={styles.lixiHint}>Chạm vào lì xì để mở</p>
+              <p className={styles.giftHint}>Chạm vào hộp quà để mở</p>
             </div>
           ) : (
             <div className={styles.qrReveal}>

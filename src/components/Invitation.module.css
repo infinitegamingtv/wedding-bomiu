@@ -129,11 +129,15 @@
 .guestbookEmoji { font-size: .55em; white-space: nowrap; }
 .guestbookPhoto { width: min(100%, 680px); aspect-ratio: 16 / 9; object-fit: cover; border-radius: 16px; }
 .giftSection { max-width: 700px; }
-.lixiWrapper { display: flex; flex-direction: column; align-items: center; margin: 32px auto 24px; cursor: pointer; outline: none; }
-.lixiShake { display: inline-block; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: pulseLixi 2s infinite; }
-.lixiWrapper:hover .lixiShake, .lixiWrapper:focus .lixiShake { transform: scale(1.05) rotate(-3deg); animation: none; }
-@keyframes pulseLixi { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.03) rotate(1deg); } 100% { transform: scale(1) rotate(0deg); } }
-.lixiHint { margin-top: 20px; font-size: 0.85rem; color: #b71c1c; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; animation: pulseText 2.5s infinite; }
+.giftBoxesWrapper { display: flex; flex-direction: column; align-items: center; margin: 32px auto 24px; cursor: pointer; outline: none; }
+.boxesContainer { position: relative; width: 240px; height: 160px; margin-bottom: 8px; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.giftBoxesWrapper:hover .boxesContainer, .giftBoxesWrapper:focus .boxesContainer { transform: scale(1.05); }
+.floatingBox { position: absolute; animation: floatBox ease-in-out infinite; }
+.boxLeft { left: 0; top: 50px; width: 70px; animation-duration: 4s; animation-delay: 0.5s; opacity: 0.85; filter: blur(0.5px); }
+.boxCenter { left: 60px; top: 10px; width: 120px; animation-duration: 5s; z-index: 2; }
+.boxRight { right: 0; top: 40px; width: 85px; animation-duration: 4.5s; animation-delay: 1.2s; z-index: 3; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1)); }
+@keyframes floatBox { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
+.giftHint { font-size: 0.85rem; color: #a1783c; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; animation: pulseText 2.5s infinite; }
 @keyframes pulseText { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 .qrReveal { animation: fadeInReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes fadeInReveal { 0% { opacity: 0; transform: translateY(-20px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
