@@ -244,6 +244,26 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const submitting = useRef(false);
   const tracks = invitation.musicTracks?.length ? invitation.musicTracks : invitation.musicUrl ? [{ name: 'Nhạc cưới', url: invitation.musicUrl }] : [];
   const trackUrl = tracks[track]?.url;
+  
+  const handleDownloadQR = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(invitation.qrCodeUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'QR_Mung_Cuoi.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download failed, opening in new tab', err);
+      window.open(invitation.qrCodeUrl, '_blank');
+    }
+  };
+
   const selectedEvent = events.find(event => event.id === activeTabId) || events[0] || {};
   
   let groomDeco = <MountainDeco />;
@@ -508,7 +528,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
               )}
               <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" />
               <div className={styles.qrActions}>
-                <a href={invitation.qrCodeUrl} download="QR_Mung_Cuoi.jpg" target="_blank" rel="noreferrer" className={styles.primaryButton}>
+                <a href={invitation.qrCodeUrl} download="QR_Mung_Cuoi.jpg" target="_blank" rel="noreferrer" className={styles.primaryButton} onClick={handleDownloadQR}>
                    Lưu ảnh QR
                 </a>
                 <button type="button" className={styles.secondaryButton} onClick={() => setGiftOpened(false)}>
