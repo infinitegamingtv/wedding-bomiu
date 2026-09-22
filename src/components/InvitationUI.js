@@ -208,6 +208,52 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const [zoom, setZoom] = useState(null);
   const [status, setStatus] = useState('idle');
   const scrollRef = useRef(null);
+  const loopAlbums = albums.length > 0 ? [...albums, ...albums, ...albums] : [];
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || albums.length === 0) return;
+    
+    let isHandlingScroll = false;
+    
+    const handleScroll = () => {
+      if (isHandlingScroll) return;
+      
+      const itemWidth = el.scrollWidth / (albums.length * 3);
+      const setWidth = itemWidth * albums.length;
+      
+      // If we scroll before the middle set
+      if (el.scrollLeft < setWidth - (itemWidth / 2)) {
+        isHandlingScroll = true;
+        el.style.scrollSnapType = 'none';
+        el.scrollLeft += setWidth;
+        el.style.scrollSnapType = 'x mandatory';
+        requestAnimationFrame(() => { isHandlingScroll = false; });
+      }
+      // If we scroll past the middle set
+      else if (el.scrollLeft > setWidth * 2 - (itemWidth / 2)) {
+        isHandlingScroll = true;
+        el.style.scrollSnapType = 'none';
+        el.scrollLeft -= setWidth;
+        el.style.scrollSnapType = 'x mandatory';
+        requestAnimationFrame(() => { isHandlingScroll = false; });
+      }
+    };
+
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Initial jump to middle set
+    setTimeout(() => {
+      isHandlingScroll = true;
+      el.style.scrollSnapType = 'none';
+      el.scrollLeft = (el.scrollWidth / 3);
+      el.style.scrollSnapType = 'x mandatory';
+      setTimeout(() => { isHandlingScroll = false; }, 50);
+    }, 100);
+
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [albums.length]);
+
   const scrollGallery = (direction) => {
     if (scrollRef.current) {
       const scrollAmount = window.innerWidth > 768 ? 600 : 300;
@@ -480,13 +526,13 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
             <button className={`${styles.scrollBtn} ${styles.scrollBtnLeft}`} onClick={() => scrollGallery('left')} aria-label="Cuộn trái">
               <InteractiveIcon defaultIcon={ArrowLeft} size={24} />
             </button>
-            <div className={styles.horizontalScroll} ref={scrollRef}>
-              {albums.map((url, index) => (
-                <button key={index} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
-                  <img src={url} alt={`Ảnh cưới ${index + 1}`} loading="lazy" decoding="async" />
-                </button>
-              ))}
-            </div>
+              <div className={styles.horizontalScroll} ref={scrollRef}>
+                {loopAlbums.map((url, index) => (
+                  <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${(index % albums.length) + 1}`} onClick={() => setZoom(url)}>
+                    <img src={url} alt={`Ảnh cưới ${(index % albums.length) + 1}`} loading="lazy" decoding="async" />
+                  </button>
+                ))}
+              </div>
             <button className={`${styles.scrollBtn} ${styles.scrollBtnRight}`} onClick={() => scrollGallery('right')} aria-label="Cuộn phải">
               <InteractiveIcon defaultIcon={ArrowRight} size={24} />
             </button>
