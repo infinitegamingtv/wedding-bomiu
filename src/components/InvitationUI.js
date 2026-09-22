@@ -11,7 +11,16 @@ const flowerItems = Array.from({ length: 8 }, (_, i) => ({ left: `${(i * 13 + 7)
 const envDecorations = Array.from({ length: 24 }, (_, i) => ({ left: `${(i * 17 + 5) % 100}%`, animationDelay: `${i * 0.7}s`, animationDuration: `${12 + (i % 5) * 2}s`, fontSize: `${0.8 + (i % 3) * 0.4}rem`, content: i % 2 === 0 ? '✿' : '❤', color: i % 2 === 0 ? '#fcedd9' : '#ff8585' }));
 const formatDate = date => date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
 const formatTime = date => date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' });
-const noOrphan = str => typeof str === 'string' ? str.replace(/ ([^ ]+)$/, '\u00A0$1') : str;
+const noOrphan = str => {
+  if (typeof str !== 'string') return str;
+  let s = str.trim();
+  s = s.replace(/Dạ Lan Event/gi, 'Dạ\u00A0Lan\u00A0Event')
+       .replace(/Tỉnh Thanh Hóa/gi, 'Tỉnh\u00A0Thanh\u00A0Hóa')
+       .replace(/Thanh Hóa/gi, 'Thanh\u00A0Hóa')
+       .replace(/Nhà Gái/gi, 'Nhà\u00A0Gái')
+       .replace(/Nhà Trai/gi, 'Nhà\u00A0Trai');
+  return s.replace(/ ([^ ]+) ([^ ]+)$/, '\u00A0$1\u00A0$2');
+};
 
 const MountainDeco = () => (
   <div style={{ position: 'absolute', inset: 0, zIndex: -1, pointerEvents: 'none' }}>
