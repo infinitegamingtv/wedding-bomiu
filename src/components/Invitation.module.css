@@ -142,6 +142,12 @@
 .qrReveal { animation: fadeInReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes fadeInReveal { 0% { opacity: 0; transform: translateY(-20px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 .giftQr { display: block; width: min(240px, 100%); aspect-ratio: 1; object-fit: contain; margin: 24px auto 0; padding: 18px; border: 1px solid #d7c7b0; border-radius: 16px; background: white; }
+.bankDetails { max-width: 380px; margin: 20px auto; padding: 16px; background: #fffaf0; border: 1px dashed #d7c7b0; border-radius: 12px; font-size: 0.9rem; text-align: left; }
+.bankDetails p { margin: 6px 0; color: #59472d; display: flex; justify-content: space-between; gap: 12px; }
+.bankDetails strong { color: #8c6b3e; font-weight: 500; min-width: 100px; }
+.bankNumber { font-size: 1.05em; font-weight: 600; letter-spacing: 0.05em; }
+.qrActions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.qrActions a, .qrActions button { flex: 1 1 auto; min-width: 140px; }
 .footer { text-align: center; padding: 64px 24px 12px; background: #e9dfcf66; }
 .footerNames { font-size: clamp(2.5rem, 5vw, 3.5rem); color: var(--color-gold); margin: 18px 0 24px; }
 .footer > a { font-size: .8rem; display: inline-flex; align-items: center; min-height: 44px; }

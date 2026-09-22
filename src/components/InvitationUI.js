@@ -477,7 +477,22 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           ) : (
             <div className={styles.qrReveal}>
               <p className={styles.intro} style={{ marginBottom: '16px' }}>Quét QR để gửi yêu thương trực tiếp tới cô dâu và chú rể</p>
+              {(invitation.bankName || invitation.accountName || invitation.accountNumber) && (
+                <div className={styles.bankDetails}>
+                  {invitation.bankName && <p><strong>Ngân hàng:</strong> {invitation.bankName}</p>}
+                  {invitation.accountName && <p><strong>Chủ tài khoản:</strong> {invitation.accountName}</p>}
+                  {invitation.accountNumber && <p><strong>Số tài khoản:</strong> <span className={styles.bankNumber}>{invitation.accountNumber}</span></p>}
+                </div>
+              )}
               <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" />
+              <div className={styles.qrActions}>
+                <a href={invitation.qrCodeUrl} download="QR_Mung_Cuoi.jpg" target="_blank" rel="noreferrer" className={styles.primaryButton}>
+                   Lưu ảnh QR
+                </a>
+                <button type="button" className={styles.secondaryButton} onClick={() => setGiftOpened(false)}>
+                   Đóng hộp quà
+                </button>
+              </div>
             </div>
           )}
         </FadeInSection>}

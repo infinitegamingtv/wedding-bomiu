@@ -441,8 +441,21 @@ export default function AdminPage() {
           </div>
           
           <div className={styles.formGroup + ' ' + styles.full}>
-            <label className={styles.label}>Link Ảnh Mã QR Mừng Cưới</label>
+            <label className={styles.label}>Link ảnh Mã QR Mừng Cưới</label>
             <input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="https://..." />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Tên Ngân hàng / Ví</label>
+            <input className={styles.input} value={data.invitation.bankName || ''} onChange={e => handleInputChange(e, 'bankName')} placeholder="Ví dụ: Vietcombank, Momo..." />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Tên Tài khoản</label>
+            <input className={styles.input} value={data.invitation.accountName || ''} onChange={e => handleInputChange(e, 'accountName')} placeholder="Ví dụ: NGUYEN VAN A" />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Số Tài khoản</label>
+            <input className={styles.input} value={data.invitation.accountNumber || ''} onChange={e => handleInputChange(e, 'accountNumber')} placeholder="Ví dụ: 0123456789" />
           </div>
         </div>
       </div>}
