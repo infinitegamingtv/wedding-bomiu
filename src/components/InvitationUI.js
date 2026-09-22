@@ -138,6 +138,7 @@ const Countdown = ({ date }) => {
 export default function InvitationUI({ data, guestName, guestSlug, initialEventId }) {
   let { invitation, albums = [], stories = [], events = [], rsvps = [], texts = {} } = data;
   const [opened, setOpened] = useState(false);
+  const [bursting, setBursting] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [track, setTrack] = useState(0);
   
@@ -293,7 +294,19 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           <h1 className={styles.envNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
           {validDate && <p className={styles.envelopeDate}>{formatDate(date).replaceAll('/', ' — ')}</p>}
           <div className={styles.envTo}><span>Thân mời</span><strong>{guestName || 'Quý khách'}</strong></div>
-          <button className={styles.primaryButton} onClick={() => { setOpened(true); setPlaying(true); }}>Mở thiệp</button>
+          <button className={styles.primaryButton} onClick={() => { 
+            setBursting(true); 
+            setPlaying(true); 
+            setTimeout(() => setOpened(true), 250); 
+          }}>Mở thiệp</button>
+          
+          {bursting && <div className={styles.heartBurst} aria-hidden="true">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <svg key={i} viewBox="0 0 32 32" className={styles.flyingHeart} style={{ '--angle': `${i * 24}deg`, '--delay': `${Math.random() * 0.1}s` }}>
+                <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14-0.454c0.84-9.945,14-8.902,14,0.454 C30,20.335,16,28.261,16,28.261z" fill="var(--color-gold)"/>
+              </svg>
+            ))}
+          </div>}
         </div>
       </div>
 
