@@ -286,26 +286,28 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       <button onClick={() => setPlaying(value => !value)} aria-pressed={playing} aria-label={playing ? 'Tắt nhạc' : 'Bật nhạc'}><MorphIcon icon={playing ? Pause : Music} size={16} /> {playing ? 'Tắt nhạc' : 'Bật nhạc'}</button>
       {tracks.length > 1 && <select aria-label="Chọn nhạc" value={track} onChange={e => { setTrack(Number(e.target.value)); setPlaying(true); }}>{tracks.map((item, index) => <option key={index} value={index}>{item.name || `Bài ${index + 1}`}</option>)}</select>}
     </div>}
-    {!opened ? <main className={styles.envelopeScreen} style={invitation.heroBgUrl ? { backgroundImage: `linear-gradient(0deg, #30271980, #30271940), url("${invitation.heroBgUrl}")` } : undefined}>
-      <div className={styles.envelopeCard}>
-        <span className={styles.eyebrow}>THIỆP MỜI ĐÁM CƯỚI</span>
-        {invitation.logoUrl && <img className={styles.cardLogo} src={invitation.logoUrl} alt="" />}
-        <h1 className={styles.envNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
-        {validDate && <p className={styles.envelopeDate}>{formatDate(date).replaceAll('/', ' · ')}</p>}
-        <div className={styles.envTo}><span>Trân trọng kính mời</span><strong>{guestName || 'Quý khách'}</strong></div>
-        <button className={styles.primaryButton} onClick={() => { setOpened(true); setPlaying(true); }}>Mở thiệp mời <InteractiveIcon defaultIcon={Mail} hoverIcon={MailOpen} size={16} style={{ marginLeft: 8 }} /></button>
-        <p className={styles.envelopeNote}>Một ngày đặc biệt, cùng những người thương.</p>
+      {/* ENVELOPE OVERLAY */}
+      <div className={`${styles.envelopeScreen} ${opened ? styles.isOpened : ''}`} style={invitation.heroBgUrl ? { backgroundImage: `linear-gradient(0deg, #302719a0, #30271960), url("${invitation.heroBgUrl}")` } : undefined}>
+        <div className={styles.envelopeCard}>
+          {invitation.logoUrl && <img className={styles.cardLogo} src={invitation.logoUrl} alt="" />}
+          <h1 className={styles.envNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
+          {validDate && <p className={styles.envelopeDate}>{formatDate(date).replaceAll('/', ' — ')}</p>}
+          <div className={styles.envTo}><span>Thân mời</span><strong>{guestName || 'Quý khách'}</strong></div>
+          <button className={styles.primaryButton} onClick={() => { setOpened(true); setPlaying(true); }}>Mở thiệp</button>
+        </div>
       </div>
-    </main> : <>
-      <a className={styles.skipLink} href="#rsvp">Đến phần xác nhận tham dự</a>
-      <div className={styles.flowers} aria-hidden="true">{flowerItems.map((style, index) => <span key={index} style={style}>✿</span>)}</div>
-      <nav className={styles.navBar} aria-label="Các phần của thiệp">
-        <a href="#invite"><InteractiveIcon defaultIcon={Mail} hoverIcon={MailOpen} /> Lời mời</a>
-        {stories.length > 0 && <a href="#story"><InteractiveIcon defaultIcon={BookHeart} /> Chuyện mình</a>}
-        {albums.length > 0 && <a href="#gallery"><InteractiveIcon defaultIcon={ImageIcon} /> Ảnh cưới</a>}
-        <a href="#rsvp" className={styles.navCta}><InteractiveIcon defaultIcon={CalendarCheck} /> Tham dự</a>
-      </nav>
-      <main className={styles.mainContent}>
+
+      {/* MAIN WEBSITE CONTENT */}
+      <div style={{ height: opened ? 'auto' : '100vh', overflow: opened ? 'visible' : 'hidden' }}>
+        <a className={styles.skipLink} href="#rsvp">Đến phần xác nhận tham dự</a>
+        <div className={styles.flowers} aria-hidden="true">{flowerItems.map((style, index) => <span key={index} style={style}>✿</span>)}</div>
+        <nav className={styles.navBar} aria-label="Các phần của thiệp">
+          <a href="#invite"><InteractiveIcon defaultIcon={Mail} hoverIcon={MailOpen} /> Lời mời</a>
+          {stories.length > 0 && <a href="#story"><InteractiveIcon defaultIcon={BookHeart} /> Chuyện mình</a>}
+          {albums.length > 0 && <a href="#gallery"><InteractiveIcon defaultIcon={ImageIcon} /> Ảnh cưới</a>}
+          <a href="#rsvp" className={styles.navCta}><InteractiveIcon defaultIcon={CalendarCheck} /> Tham dự</a>
+        </nav>
+        <main className={styles.mainContent}>
         <section id="hero" className={styles.hero} style={invitation.heroBgUrl ? { backgroundImage: `url("${invitation.heroBgUrl}")` } : undefined}>
           <div className={styles.heroContent}>
             <p className={styles.eyebrow}>{texts.heroSubtitle || 'Lễ Thành Hôn'}</p>
@@ -407,7 +409,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         {invitation.qrCodeUrl && <FadeInSection className={styles.giftSection}><h2 className={styles.sectionTitle}>{texts.giftTitle || 'Gửi Tặng Yêu Thương'}</h2><p className={styles.intro}>{invitation.message}</p><img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" /></FadeInSection>}
         <footer className={styles.footer}><span className={styles.eyebrow}>CẢM ƠN VÌ LÀ MỘT PHẦN NGÀY VUI</span><p className={styles.footerNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</p><button className={styles.secondaryButton} onClick={copyLink}><InteractiveIcon defaultIcon={Copy} isActive={!!copyStatus} activeIcon={Check} size={16} style={{ marginRight: 6 }} /> Sao chép đường dẫn thiệp</button><p className={styles.copyStatus} role="status">{copyStatus}</p><a href="#hero" style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Về đầu trang <InteractiveIcon defaultIcon={ArrowUp} hoverIcon={ArrowUp} size={16} /></a></footer>
       </main>
-    </>}
+    </div>
     {zoom && <PhotoDialog src={zoom} onClose={() => setZoom(null)} />}
     <div className={`${styles.mascot} ${styles.mascotRight}`} aria-label="Linh vật chó">
       <Mascot
