@@ -18,12 +18,15 @@
 .secondaryButton { color: #705735; background: #fffaf0b3; border: 1px solid #b7a387; }
 .secondaryButton:hover:not(:disabled) { background: #eee3d2; }
 .primaryButton:disabled, .secondaryButton:disabled { opacity: .45; cursor: not-allowed; }
-.envelopeScreen { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 32px 20px; background-size: cover; background-position: center; background-color: #3f2a24; transition: transform 1.2s cubic-bezier(0.7, 0, 0.3, 1), opacity 1.2s; }
+.envelopeScreen { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 32px 20px; background-size: cover; background-position: center; background-color: #3f2a24; transition: transform 1.6s cubic-bezier(0.65, 0, 0.35, 1), opacity 1.5s ease-in; }
 .envelopeScreen.isOpened { transform: translateY(-100vh); opacity: 0; pointer-events: none; }
+.envFloatingLayer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.envFloatingItem { position: absolute; bottom: -10%; opacity: 0; animation: envFloat linear infinite; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+@keyframes envFloat { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; } }
 .heartBurst { position: absolute; top: 50%; left: 50%; width: 0; height: 0; z-index: 10000; pointer-events: none; }
-.flyingHeart { position: absolute; width: 24px; height: 24px; opacity: 0; transform-origin: center; animation: flyHeart 1.5s cubic-bezier(0.2, 1, 0.3, 1) forwards; animation-delay: var(--delay); }
-@keyframes flyHeart { 0% { transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-200px) scale(1.5); opacity: 0; } }
-.envelopeCard { position: relative; width: min(100%, 540px); padding: 46px 32px 40px; text-align: center; background: #fffcf5; border: 1px solid #e0d4c2; border-radius: 8px; box-shadow: 0 24px 80px #1a120e66; }
+.flyingHeart { position: absolute; width: 28px; height: 28px; opacity: 0; transform-origin: center; animation: flyHeart 2.5s cubic-bezier(0.15, 1, 0.3, 1) forwards; animation-delay: var(--delay); }
+@keyframes flyHeart { 0% { transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) scale(0.2); opacity: 0; } 5% { opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(calc(var(--angle) + 45deg)) translateY(-400px) scale(1.2); opacity: 0; } }
+.envelopeCard { position: relative; width: min(100%, 540px); padding: 46px 32px 40px; text-align: center; background: #fffcf5; border: 1px solid #e0d4c2; border-radius: 8px; box-shadow: 0 24px 80px #1a120e66; z-index: 10; }
 .envelopeCard::before { content: ''; position: absolute; inset: 10px; border: 1px solid #ac906b44; border-radius: 4px; pointer-events: none; }
 .envelopeCard > .eyebrow { font-size: .62rem; letter-spacing: .16em; }
 .cardLogo { display: block; max-width: 100px; height: 58px; object-fit: contain; margin: 22px auto 12px; }

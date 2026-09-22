@@ -8,6 +8,7 @@ import { MorphIcon } from "morphicons/react";
 import { Music, Pause, X, ArrowUpRight, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, MapPin, Heart, Send, Check, Mail, MailOpen, Navigation, BookHeart, Image as ImageIcon, CalendarCheck, Loader2 } from "lucide";
 
 const flowerItems = Array.from({ length: 8 }, (_, i) => ({ left: `${(i * 13 + 7) % 100}%`, animationDelay: `${i * 2.3}s`, animationDuration: `${22 + i}s` }));
+const envDecorations = Array.from({ length: 24 }, (_, i) => ({ left: `${(i * 17 + 5) % 100}%`, animationDelay: `${i * 0.7}s`, animationDuration: `${12 + (i % 5) * 2}s`, fontSize: `${0.8 + (i % 3) * 0.4}rem`, content: i % 2 === 0 ? '✿' : '❤', color: i % 2 === 0 ? '#fcedd9' : '#ff8585' }));
 const formatDate = date => date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
 const formatTime = date => date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' });
 const noOrphan = str => typeof str === 'string' ? str.replace(/ ([^ ]+)$/, '\u00A0$1') : str;
@@ -289,6 +290,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
     </div>}
       {/* ENVELOPE OVERLAY */}
       <div className={`${styles.envelopeScreen} ${opened ? styles.isOpened : ''}`} style={invitation.heroBgUrl ? { backgroundImage: `linear-gradient(0deg, #302719a0, #30271960), url("${invitation.heroBgUrl}")` } : undefined}>
+        <div className={styles.envFloatingLayer} aria-hidden="true">
+          {envDecorations.map((dec, index) => <span key={index} className={styles.envFloatingItem} style={{ left: dec.left, animationDelay: dec.animationDelay, animationDuration: dec.animationDuration, fontSize: dec.fontSize, color: dec.color }}>{dec.content}</span>)}
+        </div>
         <div className={styles.envelopeCard}>
           {invitation.logoUrl && <img className={styles.cardLogo} src={invitation.logoUrl} alt="" />}
           <h1 className={styles.envNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
@@ -297,12 +301,12 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           <button className={styles.primaryButton} onClick={() => { 
             setBursting(true); 
             setPlaying(true); 
-            setTimeout(() => setOpened(true), 250); 
+            setTimeout(() => setOpened(true), 400); 
           }}>Mở thiệp</button>
           
           {bursting && <div className={styles.heartBurst} aria-hidden="true">
-            {Array.from({ length: 15 }).map((_, i) => (
-              <svg key={i} viewBox="0 0 32 32" className={styles.flyingHeart} style={{ '--angle': `${i * 24}deg`, '--delay': `${Math.random() * 0.1}s` }}>
+            {Array.from({ length: 30 }).map((_, i) => (
+              <svg key={i} viewBox="0 0 32 32" className={styles.flyingHeart} style={{ '--angle': `${i * 12}deg`, '--delay': `${Math.random() * 0.15}s` }}>
                 <path d="M16,28.261c0,0-14-7.926-14-17.046c0-9.356,13.159-10.399,14-0.454c0.84-9.945,14-8.902,14,0.454 C30,20.335,16,28.261,16,28.261z" fill="var(--color-gold)"/>
               </svg>
             ))}
