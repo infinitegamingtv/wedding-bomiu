@@ -346,6 +346,11 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       brideParentsTitle: data.texts?.groomParentsTitle || 'Nhà Trai',
       heroSubtitle: 'Lễ Nạp Tài',
     };
+  } else if (/hà nội|ha noi/i.test(selectedEvent.name || '') || selectedEvent.id === 'ha-noi') {
+    texts = {
+      ...texts,
+      heroSubtitle: 'Tiệc Thân Mật',
+    };
   }
 
   const mapUrl = selectedEvent.mapUrl;

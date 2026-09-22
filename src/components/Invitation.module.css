@@ -39,7 +39,7 @@
 .envTo strong { font-size: 1.1rem; font-weight: 500; }
 .envelopeNote { font-size: .72rem; margin-top: 24px; color: var(--color-text-light); font-style: italic; }
 .mainContent { padding-bottom: calc(108px + env(safe-area-inset-bottom)); }
-.hero { height: 100svh; min-height: 100svh; position: relative; display: flex; align-items: center; justify-content: center; padding: max(40px, 5vh) max(6vw, 24px); background-size: cover; background-position: center; background-color: #8c8273; isolation: isolate; overflow: hidden; }
+.hero { height: 100svh; min-height: 100svh; position: relative; display: flex; align-items: center; justify-content: flex-start; padding: max(40px, 5vh) max(6vw, 24px); background-size: cover; background-position: center; background-color: #8c8273; isolation: isolate; overflow: hidden; }
 .hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #28251f8c 0%, #28251f22 65%), linear-gradient(0deg, #28251f55, transparent 40%); }
 .heroContent { width: min(100%, 490px); text-align: center; color: #fff; padding: max(24px, 4vh) 28px; background: #352f283d; border: 1px solid #fff5; border-radius: 220px 220px 18px 18px; backdrop-filter: blur(8px); box-shadow: 0 20px 50px #20170e1a; display: flex; flex-direction: column; align-items: center; max-height: 90vh; overflow-y: auto; scrollbar-width: none; }
 .heroContent::-webkit-scrollbar { display: none; }
