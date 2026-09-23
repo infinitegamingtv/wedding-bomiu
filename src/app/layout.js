@@ -1,4 +1,5 @@
 import { Lora, Fleur_De_Leah } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import ButtonSfx from "@/components/ButtonSfx";
 
@@ -23,7 +24,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="vi">
-      <body className={`${lora.variable} ${fleurDeLeah.variable}`}><ButtonSfx />{children}</body>
+      <body className={`${lora.variable} ${fleurDeLeah.variable}`}><ButtonSfx />{children}<Analytics /></body>
     </html>
   );
 }
