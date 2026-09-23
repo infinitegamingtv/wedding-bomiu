@@ -35,8 +35,8 @@
 .envNames { font-size: clamp(3.1rem, 8vw, 4.3rem); line-height: 1.1; margin: 18px 0 24px; }
 .envNames span, .heroNames span, .footerNames span { display: block; font-size: .5em; margin: 5px 0; }
 .envelopeDate { font-size: .8rem; letter-spacing: .24em; color: #705735; }
-.envTo { display: grid; gap: 6px; margin: 26px 0; font-size: .85rem; }
-.envTo strong { font-size: 1.1rem; font-weight: 500; }
+.envTo { display: grid; gap: 8px; margin: 32px 0 28px; font-size: .9rem; color: #62533c; }
+.envTo strong { font-family: var(--font-lora), Georgia, serif; font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 500; color: var(--color-gold); }
 .envelopeNote { font-size: .72rem; margin-top: 24px; color: var(--color-text-light); font-style: italic; }
 .mainContent { padding-bottom: calc(108px + env(safe-area-inset-bottom)); }
 .hero { height: 100svh; min-height: 100svh; position: relative; display: flex; align-items: center; justify-content: flex-start; padding: max(40px, 5vh) max(6vw, 24px); background-size: cover; background-position: center; background-color: #8c8273; isolation: isolate; overflow: hidden; }
