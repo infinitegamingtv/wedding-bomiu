@@ -1,5 +1,5 @@
 import { Lora, Fleur_De_Leah } from "next/font/google";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import ButtonSfx from "@/components/ButtonSfx";
 
