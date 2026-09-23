@@ -70,8 +70,8 @@ function weddingDate(value) {
 }
 
 function mapEmbed(value) {
-  const source = value?.match(/src=["']([^"']+)["']/)?.[1];
-  if (!source) return null;
+  if (!value) return null;
+  const source = value.match(/src=["']([^"']+)["']/)?.[1] || value;
   try {
     const url = new URL(source.replaceAll('&amp;', '&'));
     return url.protocol === 'https:' && /(^|\.)google\.com$/.test(url.hostname) && url.pathname.startsWith('/maps/embed') ? url.href : null;
@@ -507,6 +507,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                   const subDate = weddingDate(sub.date);
                   const subValidDate = Number.isFinite(subDate.getTime());
                   const subDirections = sub.mapUrl && /^https?:\/\//.test(sub.mapUrl) && !sub.mapUrl.includes('/embed') ? sub.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sub.address || sub.venue || '')}`;
+                    const subEmbed = mapEmbed(sub.mapUrl);
                   return (
                     <div key={sub.id} className={styles.eventCard} style={{ marginTop: 0, height: '100%' }}>
                       <p className={styles.eyebrow}>{sub.name}</p>
@@ -514,6 +515,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                       {!subValidDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{sub.lunarDate && <p className={styles.muted}>Tức ngày {sub.lunarDate}</p>}
                       <h3>{texts.locationPrefix || 'Tại'} {noOrphan(sub.venue)}</h3><p>{noOrphan(sub.address)}</p>
                       <div className={styles.actions}>{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
+                      {subEmbed && <div className={styles.mapContainer} style={{ marginTop: '24px' }}><iframe title={`Bản đồ ${sub.name}`} src={subEmbed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
                     </div>
                   );
                 })}
