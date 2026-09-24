@@ -505,13 +505,13 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           {(invitation.groomBio || invitation.brideBio || invitation.groomAvatarUrl || invitation.brideAvatarUrl) && (
             <div className={styles.coupleProfiles}>
               <div>
-                {invitation.groomAvatarUrl && <Image src={invitation.groomAvatarUrl} alt={invitation.groom} width={80} height={80} loading="lazy" />}
+                {invitation.groomAvatarUrl && <Image src={invitation.groomAvatarUrl} alt={invitation.groom} width={80} height={80} loading="eager" />}
                 <strong>{invitation.groom}</strong>
                 <p>{invitation.groomBio}</p>
               </div>
               <span className={styles.coupleDivider} aria-hidden="true">&</span>
               <div>
-                {invitation.brideAvatarUrl && <Image src={invitation.brideAvatarUrl} alt={invitation.bride} width={80} height={80} loading="lazy" />}
+                {invitation.brideAvatarUrl && <Image src={invitation.brideAvatarUrl} alt={invitation.bride} width={80} height={80} loading="eager" />}
                 <strong>{invitation.bride}</strong>
                 <p>{invitation.brideBio}</p>
               </div>
@@ -546,7 +546,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                       {!subValidDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{sub.lunarDate && <p className={styles.muted}>Tức ngày {sub.lunarDate}</p>}
                       <h3>{texts.locationPrefix || 'Tại'} {noOrphan(sub.venue)}</h3><p>{noOrphan(sub.address)}</p>
                       <div className={styles.actions}>{subValidDate && <a className={styles.secondaryButton} href={subCalendarUrl} target="_blank" rel="noreferrer">Lưu lịch</a>}{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
-                      {subEmbed && <div className={styles.mapContainer} style={{ marginTop: '24px' }}><iframe title={`Bản đồ ${sub.name}`} src={subEmbed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+                      {subEmbed && <div className={styles.mapContainer} style={{ marginTop: '24px' }}><iframe title={`Bản đồ ${sub.name}`} src={subEmbed} loading="eager" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
                     </div>
                   );
                 })}
@@ -564,10 +564,10 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           )}
 
           {schedule.length > 0 && <div className={styles.itinerary}><h3 className={styles.subheading}>{texts.itineraryTitle || 'Lịch Trình'}</h3><ol className={styles.schedule}>{schedule.map((item, index) => <li key={item.id || index}><span className={styles.stepNumber}>{String(index + 1).padStart(2, '0')}</span><strong>{item.time}</strong><span>{item.event || item.label}</span></li>)}</ol></div>}
-          {embed && <div className={styles.mapContainer}><iframe title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+          {embed && <div className={styles.mapContainer}><iframe title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} loading="eager" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
         </FadeInSection>
 
-        {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <Image src={story.imageUrl} alt={story.title} width={600} height={450} loading="lazy" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
+        {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <Image src={story.imageUrl} alt={story.title} width={600} height={450} loading="eager" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
 
         {albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
           <div className={styles.galleryContainer}>
@@ -577,7 +577,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
               <div className={styles.horizontalScroll} ref={scrollRef}>
                 {loopAlbums.map((url, index) => (
                   <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${(index % albums.length) + 1}`} onClick={() => setZoom(url)}>
-                    <img src={url} alt={`Ảnh cưới ${(index % albums.length) + 1}`} loading="lazy" decoding="async" />
+                    <img src={url} alt={`Ảnh cưới ${(index % albums.length) + 1}`} loading="eager" decoding="async" />
                   </button>
                 ))}
               </div>
@@ -591,7 +591,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           <div className={styles.rsvpForm}>{status === 'success' ? <div ref={success} tabIndex={-1} role="status" className={styles.success}><MorphIcon icon={Heart} size={24} style={{ display: 'block', margin: '0 auto 12px', color: '#79603d' }} /><h3>Cảm ơn {form.name}!</h3><p>{form.attending === 'yes' ? 'Chúng mình đã nhận được xác nhận tham dự. Hẹn gặp bạn trong ngày vui!' : 'Chúng mình đã nhận được phản hồi. Cảm ơn bạn đã dành tình cảm cho chúng mình!'}</p><p className={styles.muted}>{replyEvents || 'Chưa chọn tiệc'}{form.attending === 'yes' ? ` · ${form.count} người` : ' · Không tham dự'}</p><div className={styles.actions}><button className={styles.primaryButton} onClick={() => setStatus('idle')}>Sửa xác nhận</button><a className={styles.secondaryButton} href="#guestbook">Xem sổ lưu bút</a></div></div> : <form onSubmit={submit} aria-busy={status === 'submitting'}>{hasReply && <p className={styles.muted}>Bạn đang sửa phản hồi đã gửi. Bấm lưu để cập nhật.</p>}{!replyReady && <p role="status">{replyError || 'Đang tải thông tin xác nhận…'}</p>}{!replyReady && replyError && <button type="button" className={styles.secondaryButton} onClick={() => setRetryLoad(value => value + 1)}>Thử tải lại</button>}<fieldset disabled={!replyReady || status === 'submitting'} className={styles.formFields}><div className={styles.formGroup}><label htmlFor="guest-name">Tên của bạn <span aria-hidden="true">*</span></label><input id="guest-name" name="name" autoComplete="name" required maxLength={120} pattern=".*\S.*" title="Vui lòng nhập tên của bạn" value={form.name} onChange={update} placeholder="Nhập tên của bạn" /></div><div className={styles.formGroup}><label htmlFor="attendance">Bạn sẽ tham dự chứ?</label><select id="attendance" name="attending" value={form.attending} onChange={update}><option value="yes">Mình sẽ đến chung vui</option><option value="no">Tiếc quá, mình không thể tham dự</option></select></div><div className={styles.formGroup}><label>Bạn sẽ tới chung vui tại</label><div className={styles.checkboxGroup}>{events.map(event => <label key={event.id} className={styles.checkboxLabel}><input type="checkbox" checked={form.eventIds.includes(event.id)} onChange={e => { const checked = e.target.checked; rsvpSelectionEdited.current = true; setForm(prev => { const current = new Set(prev.eventIds.filter(Boolean)); if (checked) current.add(event.id); else current.delete(event.id); return { ...prev, eventIds: Array.from(current) }; }); }} />{event.name}</label>)}</div></div>{form.attending === 'yes' && <div className={styles.formGroup}><label htmlFor="guest-count">Tổng số người tham dự</label><input id="guest-count" name="count" type="number" inputMode="numeric" min="1" max="10" required value={form.count} onChange={update} aria-describedby="count-hint" /><small id="count-hint">Tính cả bạn và người đi cùng (1–10 người).</small></div>}<div className={styles.formGroup}><label htmlFor="wish">Lời chúc gửi chúng mình <span className={styles.optional}>(không bắt buộc)</span></label><textarea id="wish" name="message" maxLength={2000} rows={4} value={form.message} onChange={update} placeholder="Gửi gắm một chút yêu thương…" aria-describedby="wish-hint" /><small id="wish-hint">Lời chúc và tên của bạn sẽ xuất hiện trong sổ lưu bút.</small></div><button className={styles.primaryButton} disabled={status === 'submitting'} type="submit">{status === 'submitting' ? 'Đang gửi phản hồi…' : (hasReply ? <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Lưu thay đổi <InteractiveIcon defaultIcon={Send} isActive={status === 'submitting'} activeIcon={Loader2} size={16} /></span> : <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Gửi phản hồi <InteractiveIcon defaultIcon={Send} isActive={status === 'submitting'} activeIcon={Loader2} size={16} /></span>)}</button></fieldset>{status === 'error' && <p className={styles.error} role="alert">{replyError || 'Chưa gửi được phản hồi. Thông tin của bạn vẫn được giữ lại, vui lòng thử lại.'}</p>}</form>}</div>
         </FadeInSection>
 
-        <FadeInSection id="guestbook"><p className={styles.eyebrow}>YÊU THƯƠNG ĐƯỢC VIẾT THÀNH LỜI</p><h2 className={styles.sectionTitle}>{texts.guestbookTitle || 'Sổ Lưu Bút'} <span className={styles.guestbookEmoji}>🍀💚</span></h2>{invitation.guestbookPhotoUrl && <Image className={styles.guestbookPhoto} src={invitation.guestbookPhotoUrl} alt="Kỷ niệm của chúng mình" width={800} height={600} loading="lazy" />}<div className={styles.wishes}>{wishes.length ? wishes.map((wish, index) => <blockquote key={wish.id || index}><p>“{wish.message}”</p><cite>— {wish.name}</cite></blockquote>) : <p className={styles.intro}>Hãy là người đầu tiên gửi lời chúc cho chúng mình nhé.</p>}</div><a className={styles.secondaryButton} href="#rsvp">Gửi một lời chúc</a></FadeInSection>
+        <FadeInSection id="guestbook"><p className={styles.eyebrow}>YÊU THƯƠNG ĐƯỢC VIẾT THÀNH LỜI</p><h2 className={styles.sectionTitle}>{texts.guestbookTitle || 'Sổ Lưu Bút'} <span className={styles.guestbookEmoji}>🍀💚</span></h2>{invitation.guestbookPhotoUrl && <Image className={styles.guestbookPhoto} src={invitation.guestbookPhotoUrl} alt="Kỷ niệm của chúng mình" width={800} height={600} loading="eager" />}<div className={styles.wishes}>{wishes.length ? wishes.map((wish, index) => <blockquote key={wish.id || index}><p>“{wish.message}”</p><cite>— {wish.name}</cite></blockquote>) : <p className={styles.intro}>Hãy là người đầu tiên gửi lời chúc cho chúng mình nhé.</p>}</div><a className={styles.secondaryButton} href="#rsvp">Gửi một lời chúc</a></FadeInSection>
 
         {invitation.qrCodeUrl && <FadeInSection className={styles.giftSection}>
           <h2 className={styles.sectionTitle}>GỬI QUÀ MỪNG</h2>
@@ -620,7 +620,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                   {invitation.accountNumber && <p><strong>Số tài khoản:</strong> <span className={styles.bankNumber}>{invitation.accountNumber}</span></p>}
                 </div>
               )}
-              <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" />
+              <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="eager" />
               <div className={styles.qrActions}>
                 <a href={invitation.qrCodeUrl} download="QR_Mung_Cuoi.jpg" target="_blank" rel="noreferrer" className={styles.primaryButton} onClick={handleDownloadQR}>
                    Lưu ảnh QR
