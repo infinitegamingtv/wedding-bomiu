@@ -209,15 +209,11 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const [playing, setPlaying] = useState(false);
   const [showMusicList, setShowMusicList] = useState(false);
   const [track, setTrack] = useState(0);
+    const tracksCount = invitation.musicTracks?.length || (invitation.musicUrl ? 1 : 0);
     useEffect(() => {
       if (tracksCount > 1) setTrack(Math.floor(Math.random() * tracksCount));
     }, [tracksCount]);
   
-  const tracksCount = invitation.musicTracks?.length || (invitation.musicUrl ? 1 : 0);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (tracksCount > 1) setTrack(Math.floor(Math.random() * tracksCount));
-  }, [tracksCount]);
   
   const [zoom, setZoom] = useState(null);
   const [status, setStatus] = useState('idle');
