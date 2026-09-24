@@ -209,6 +209,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const [playing, setPlaying] = useState(false);
   const [showMusicList, setShowMusicList] = useState(false);
   const [track, setTrack] = useState(0);
+    const [showMusicTitle, setShowMusicTitle] = useState(false);
+    const titleTimeout = useRef(null);
+    const showTitleBriefly = () => { setShowMusicTitle(true); if (titleTimeout.current) clearTimeout(titleTimeout.current); titleTimeout.current = setTimeout(() => setShowMusicTitle(false), 3000); };
     const tracksCount = invitation.musicTracks?.length || (invitation.musicUrl ? 1 : 0);
     useEffect(() => {
       if (tracksCount > 1) setTrack(Math.floor(Math.random() * tracksCount));
@@ -408,14 +411,14 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   };
 
   return <div className={styles.wrapper}>
-    {trackUrl && <audio ref={audio} src={trackUrl} preload="metadata" loop={tracksCount === 1} onEnded={() => setTrack(index => tracksCount > 1 ? (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount : 0)} onError={() => setPlaying(false)} />}
+    {trackUrl && <audio ref={audio} src={trackUrl} preload="metadata" loop={tracksCount === 1} onEnded={() => { setTrack(index => tracksCount > 1 ? (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount : 0); showTitleBriefly(); }} onError={() => setPlaying(false)} />}
           {tracks.length > 0 && <div className={styles.musicControl}>
         <div className={styles.musicControlButtons}>
-          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài trước"><MorphIcon icon={SkipBack} size={16} /></button>}
-          <button onClick={() => setPlaying(value => !value)} aria-pressed={playing} aria-label={playing ? 'Tắt nhạc' : 'Bật nhạc'}><MorphIcon icon={playing ? Pause : Music} size={16} /></button>
-          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài tiếp"><MorphIcon icon={SkipForward} size={16} /></button>}
+          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); showTitleBriefly(); }} aria-label="Bài trước"><MorphIcon icon={SkipBack} size={16} /></button>}
+          <button onClick={() => { setPlaying(value => !value); showTitleBriefly(); }} aria-pressed={playing} aria-label={playing ? 'Tắt nhạc' : 'Bật nhạc'}><MorphIcon icon={playing ? Pause : Music} size={16} /></button>
+          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); showTitleBriefly(); }} aria-label="Bài tiếp"><MorphIcon icon={SkipForward} size={16} /></button>}
         </div>
-        {tracks[track]?.name && <div className={styles.musicTitleWrapper}>{tracks[track].name}</div>}
+        {tracks[track]?.name && <div className={`${styles.musicTitleWrapper} ${showMusicTitle ? styles.showTitle : ''}`}>{tracks[track].name}</div>}
       </div>}
       {/* ENVELOPE OVERLAY */}
       <div className={`${styles.envelopeScreen} ${opened ? styles.isOpened : ''}`} style={invitation.heroBgUrl ? { backgroundImage: `linear-gradient(0deg, #302719a0, #30271960), url("${invitation.heroBgUrl}")` } : undefined}>
