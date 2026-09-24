@@ -207,6 +207,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const [bursting, setBursting] = useState(false);
   const [giftOpened, setGiftOpened] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [showMusicList, setShowMusicList] = useState(false);
   const [track, setTrack] = useState(0);
   
   const tracksCount = invitation.musicTracks?.length || (invitation.musicUrl ? 1 : 0);
@@ -345,7 +346,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       ...texts,
       groomParentsTitle: data.texts?.brideParentsTitle || 'Nhà Gái',
       brideParentsTitle: data.texts?.groomParentsTitle || 'Nhà Trai',
-      heroSubtitle: 'Lễ Nạp Tài',
+      heroSubtitle: 'Tiệc Cưới Nhà Gái',
     };
   } else if (/hà nội|ha noi/i.test(selectedEvent.name || '') || selectedEvent.id === 'ha-noi') {
     texts = {
@@ -476,6 +477,24 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         </section>
 
         <FadeInSection id="invite">
+
+        <div className={styles.eventPickerContainer}>
+          <h2 className={styles.pickerTitle}>Bạn sẽ chung vui cùng chúng mình tại đâu?</h2>
+          <div className={styles.eventPicker} role="group" aria-label="Chọn tiệc cưới">
+            {events.map(event => {
+              const mainDate = weddingDate(event.date);
+              const subDate = event.subEvents?.[0] ? weddingDate(event.subEvents[0].date) : null;
+              const dateToShow = Number.isFinite(mainDate.getTime()) ? mainDate : (Number.isFinite(subDate?.getTime()) ? subDate : null);
+              return (
+                <button key={event.id} className={event.id === selectedEvent.id ? styles.primaryButton : styles.secondaryButton} aria-pressed={event.id === selectedEvent.id} onClick={() => { setActiveTabId(event.id); if (!rsvpSelectionEdited.current) setForm(previous => ({ ...previous, eventIds: [event.id] })); if (hasReply) setStatus('idle'); }}>
+                  <strong>{event.name}</strong>
+                  {dateToShow && <small>{formatDate(dateToShow)}</small>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
           <p className={styles.eyebrow}>NGÀY VUI CỦA CHÚNG MÌNH</p>
           <h2 className={styles.sectionTitle}>{texts.inviteTitle || 'Trân Trọng Kính Mời'}</h2>
           {guestName && <p className={styles.guestName}>{guestName}</p>}
@@ -499,7 +518,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
             <div>{groomDeco}<h3>{texts.groomParentsTitle || 'Nhà Trai'}</h3>{invitation.groomParents?.map((name, index) => <p key={index}>{name}</p>)}<small>{invitation.groomAddress?.replace(/ ([^ ]+)$/, '\u00A0$1')}</small></div>
             <div>{brideDeco}<h3>{texts.brideParentsTitle || 'Nhà Gái'}</h3>{invitation.brideParents?.map((name, index) => <p key={index}>{name}</p>)}<small>{invitation.brideAddress?.replace(/ ([^ ]+)$/, '\u00A0$1')}</small></div>
           </div>
-          <div className={styles.eventPicker} role="group" aria-label="Chọn tiệc cưới">{events.map(event => <button key={event.id} className={event.id === selectedEvent.id ? styles.primaryButton : styles.secondaryButton} aria-pressed={event.id === selectedEvent.id} onClick={() => { setActiveTabId(event.id); if (!rsvpSelectionEdited.current) setForm(previous => ({ ...previous, eventIds: [event.id] })); if (hasReply) setStatus('idle'); }}>{event.name}</button>)}</div>
+          
           
           {selectedEvent.subEvents ? (
             <>
@@ -508,14 +527,22 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                   const subDate = weddingDate(sub.date);
                   const subValidDate = Number.isFinite(subDate.getTime());
                   const subDirections = sub.mapUrl && /^https?:\/\//.test(sub.mapUrl) && !sub.mapUrl.includes('/embed') ? sub.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sub.address || sub.venue || '')}`;
+                    
+                    let subCalendarUrl = '#';
+                    if (subValidDate) {
+                      const stamp = value => value.toISOString().replace(/[-:]|\.\d{3}/g, '');
+                      const end = new Date(subDate.getTime() + 4 * 3600000);
+                      subCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(sub.name)} - ${encodeURIComponent(invitation.groom)} & ${encodeURIComponent(invitation.bride)}&dates=${stamp(subDate)}/${stamp(end)}&details=${encodeURIComponent(texts.inviteGreeting || 'Trân trọng kính mời')}&location=${encodeURIComponent(sub.address || sub.venue || '')}`;
+                    }
                     const subEmbed = mapEmbed(sub.mapUrl);
+
                   return (
                     <div key={sub.id} className={styles.eventCard} style={{ marginTop: 0, height: '100%' }}>
                       <p className={styles.eyebrow}>{sub.name}</p>
                       {subValidDate && <><p className={styles.eventTime}>{formatTime(subDate)}</p><time dateTime={subDate.toISOString()} className={styles.eventDate}>{formatDate(subDate)}</time></>}
                       {!subValidDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{sub.lunarDate && <p className={styles.muted}>Tức ngày {sub.lunarDate}</p>}
                       <h3>{texts.locationPrefix || 'Tại'} {noOrphan(sub.venue)}</h3><p>{noOrphan(sub.address)}</p>
-                      <div className={styles.actions}>{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
+                      <div className={styles.actions}>{subValidDate && <a className={styles.secondaryButton} href={subCalendarUrl} target="_blank" rel="noreferrer">Lưu lịch</a>}{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
                       {subEmbed && <div className={styles.mapContainer} style={{ marginTop: '24px' }}><iframe title={`Bản đồ ${sub.name}`} src={subEmbed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
                     </div>
                   );
