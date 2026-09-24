@@ -280,8 +280,7 @@ export default function AdminPage() {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}><label className={styles.label}>Link ảnh Logo</label><input className={styles.input} value={data.invitation.logoUrl || ''} onChange={e => handleInputChange(e, 'logoUrl')} placeholder="VD: https://..." /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Link ảnh nền chính (Hero Background)</label><input className={styles.input} value={data.invitation.heroBgUrl || ''} onChange={e => handleInputChange(e, 'heroBgUrl')} placeholder="VD: https://..." /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Link ảnh QR Mừng cưới</label><input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="VD: https://..." /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Link ảnh kỉ niệm (Cạnh sổ lưu bút)</label><input className={styles.input} value={data.invitation.guestbookPhotoUrl || ''} onChange={e => handleInputChange(e, 'guestbookPhotoUrl')} placeholder="VD: https://..." /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Link ảnh kỉ niệm (Cạnh sổ lưu bút)</label><input className={styles.input} value={data.invitation.guestbookPhotoUrl || ''} onChange={e => handleInputChange(e, 'guestbookPhotoUrl')} placeholder="VD: https://..." /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Avatar Chú rể</label><input className={styles.input} value={data.invitation.groomAvatarUrl || ''} onChange={e => handleInputChange(e, 'groomAvatarUrl')} placeholder="VD: https://..." /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Avatar Cô dâu</label><input className={styles.input} value={data.invitation.brideAvatarUrl || ''} onChange={e => handleInputChange(e, 'brideAvatarUrl')} placeholder="VD: https://..." /></div>
               </div>
@@ -321,6 +320,7 @@ export default function AdminPage() {
                 <div className={styles.formGroup}><label className={styles.label}>Tên Ngân Hàng</label><input className={styles.input} value={data.invitation.bankName || ''} onChange={e => handleInputChange(e, 'bankName')} placeholder="VD: Vietcombank" /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Tên Chủ Tài Khoản</label><input className={styles.input} value={data.invitation.accountName || ''} onChange={e => handleInputChange(e, 'accountName')} placeholder="VD: NGUYEN VAN A" /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Số Tài Khoản</label><input className={styles.input} value={data.invitation.accountNumber || ''} onChange={e => handleInputChange(e, 'accountNumber')} placeholder="VD: 123456789" /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Link ảnh QR Mừng cưới</label><input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="VD: https://..." /></div>
               </div>
             </div>
 
