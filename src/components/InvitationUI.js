@@ -282,19 +282,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const [newWish, setNewWish] = useState(null);
   const audio = useRef(null);
   const rsvpSelectionEdited = useRef(false);
-  useEffect(() => {
-    const handleInteraction = () => {
-      if (!playing && audio.current) setPlaying(true);
-      document.removeEventListener('click', handleInteraction);
-      document.removeEventListener('touchstart', handleInteraction);
-    };
-    document.addEventListener('click', handleInteraction, { once: true });
-    document.addEventListener('touchstart', handleInteraction, { once: true });
-    return () => {
-      document.removeEventListener('click', handleInteraction);
-      document.removeEventListener('touchstart', handleInteraction);
-    };
-  }, [playing]);
+  
   const heading = useRef(null);
   const success = useRef(null);
   const submitting = useRef(false);
