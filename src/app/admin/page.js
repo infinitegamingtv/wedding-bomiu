@@ -273,6 +273,16 @@ export default function AdminPage() {
             </div>
 
             <div className={styles.card}>
+              <h2 className={styles.cardTitle}>Ảnh chính & Nhận diện</h2>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}><label className={styles.label}>Link ảnh Logo</label><input className={styles.input} value={data.invitation.logoUrl || ''} onChange={e => handleInputChange(e, 'logoUrl')} placeholder="VD: https://..." /></div>
+                <div className={styles.formGroup}><label className={styles.label}>Link ảnh nền chính (Hero Background)</label><input className={styles.input} value={data.invitation.heroBgUrl || ''} onChange={e => handleInputChange(e, 'heroBgUrl')} placeholder="VD: https://..." /></div>
+                <div className={styles.formGroup}><label className={styles.label}>Link ảnh QR Mừng cưới</label><input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="VD: https://..." /></div>
+                <div className={styles.formGroup}><label className={styles.label}>Link ảnh kỉ niệm (Cạnh sổ lưu bút)</label><input className={styles.input} value={data.invitation.guestbookPhotoUrl || ''} onChange={e => handleInputChange(e, 'guestbookPhotoUrl')} placeholder="VD: https://..." /></div>
+              </div>
+            </div>
+
+            <div className={styles.card}>
               <h2 className={styles.cardTitle}>Tùy chỉnh Văn Bản</h2>
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}><label className={styles.label}>Chữ &quot;Nhà Trai&quot;</label><input className={styles.input} value={data.texts?.groomParentsTitle || ''} onChange={e => handleTextChange(e, 'groomParentsTitle')} /></div>
