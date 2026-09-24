@@ -319,7 +319,7 @@ export default function AdminPage() {
                   onChange={e => setNewImageUrl(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' && newImageUrl.trim()) {
-                      setData(prev => ({ ...prev, albums: [...(prev.albums || []), { url: newImageUrl.trim() }] }));
+                      setData(prev => ({ ...prev, albums: [...(prev.albums || []), newImageUrl.trim()] }));
                       setNewImageUrl('');
                     }
                   }}
@@ -329,7 +329,7 @@ export default function AdminPage() {
                   style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }} 
                   onClick={() => {
                     if (newImageUrl.trim()) {
-                      setData(prev => ({ ...prev, albums: [...(prev.albums || []), { url: newImageUrl.trim() }] }));
+                      setData(prev => ({ ...prev, albums: [...(prev.albums || []), newImageUrl.trim()] }));
                       setNewImageUrl('');
                     }
                   }}
@@ -343,7 +343,7 @@ export default function AdminPage() {
                 {data.albums?.map((img, i) => (
                   <div key={i} className={styles.photoItem}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.url} alt="Album" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                    <img src={typeof img === 'string' ? img : img.url} alt="Album" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                     <button 
                       title="Xóa ảnh này" 
                       onClick={() => {
