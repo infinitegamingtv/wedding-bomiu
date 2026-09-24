@@ -423,9 +423,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
     {trackUrl && <audio ref={audio} src={trackUrl} preload="metadata" loop={tracksCount === 1} onEnded={() => setTrack(index => tracksCount > 1 ? (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount : 0)} onError={() => setPlaying(false)} />}
           {tracks.length > 0 && <div className={styles.musicControl}>
         <div className={styles.musicControlButtons}>
-          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài trước"><SkipBack size={16} /></button>}
+          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài trước"><MorphIcon icon={SkipBack} size={16} /></button>}
           <button onClick={() => setPlaying(value => !value)} aria-pressed={playing} aria-label={playing ? 'Tắt nhạc' : 'Bật nhạc'}><MorphIcon icon={playing ? Pause : Music} size={16} /></button>
-          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài tiếp"><SkipForward size={16} /></button>}
+          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài tiếp"><MorphIcon icon={SkipForward} size={16} /></button>}
         </div>
         {tracks[track]?.name && <div className={styles.musicTitleWrapper}>{tracks[track].name}</div>}
       </div>}
