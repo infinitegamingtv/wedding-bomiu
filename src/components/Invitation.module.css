@@ -159,8 +159,8 @@
 .navBar a:hover { background: #e7dbc9; }
 .navBar .navCta { background: var(--color-gold); color: #fff; }
 .navBar .navCta:hover { background: #604a2d; }
-.musicControl { position: fixed; z-index: 20; top: max(20px, env(safe-area-inset-top)); right: 20px; display: flex; flex-direction: column; align-items: end; gap: 8px; }
-.musicControl button { min-height: 44px; padding: 10px 16px; border: 1px solid #fff; border-radius: 24px; background: #fffaf1e8; color: #59472d; backdrop-filter: blur(12px); font-size: .8rem; }
+
+
 
 .flowers { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
 .flowers span { position: absolute; top: -40px; font-size: 1.2rem; color: #ba92637a; animation: drift linear infinite; }
@@ -217,3 +217,8 @@
 .musicDropdown { display: flex; flex-direction: column; gap: 4px; background: #fffaf1f2; backdrop-filter: blur(12px); border-radius: 12px; padding: 8px; max-height: 250px; overflow-y: auto; border: 1px solid #fff; box-shadow: 0 4px 12px #0002; }
 .musicDropdown button { min-height: 36px; padding: 6px 12px; border: none; background: transparent; text-align: right; border-radius: 6px; cursor: pointer; color: #59472d; font-size: .8rem; }
 .activeTrack { font-weight: bold; color: var(--color-gold) !important; background: #f3efe6 !important; }
+.musicControl { position: fixed; z-index: 20; top: max(12px, env(safe-area-inset-top)); right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+.musicControlButtons { display: flex; gap: 6px; pointer-events: auto; background: #fffaf1e8; padding: 4px; border-radius: 24px; border: 1px solid #fff; backdrop-filter: blur(12px); box-shadow: 0 4px 12px #0002; }
+.musicControl button { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; border-radius: 50%; background: transparent; color: #59472d; cursor: pointer; transition: all 0.2s; }
+.musicControl button:hover { background: #e7dbc9; }
+.musicTitleWrapper { max-width: 200px; pointer-events: auto; background: #fffaf1cc; padding: 4px 12px; border-radius: 12px; border: 1px solid #fff; box-shadow: 0 4px 12px #0002; backdrop-filter: blur(12px); font-size: 0.75rem; color: #59472d; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; text-align: center; }

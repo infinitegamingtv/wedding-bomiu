@@ -6,7 +6,7 @@ import styles from './Invitation.module.css';
 import { Mascot } from 'page-mascot';
 import Image from 'next/image';
 import { MorphIcon } from "morphicons/react";
-import { Music, Pause, X, ArrowUpRight, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, MapPin, Heart, Send, Check, Mail, MailOpen, Navigation, BookHeart, Image as ImageIcon, CalendarCheck, Loader2 } from "lucide";
+import { Music, Pause, SkipBack, SkipForward, X, ArrowUpRight, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, MapPin, Heart, Send, Check, Mail, MailOpen, Navigation, BookHeart, Image as ImageIcon, CalendarCheck, Loader2 } from "lucide";
 
 const flowerItems = Array.from({ length: 8 }, (_, i) => ({ left: `${(i * 13 + 7) % 100}%`, animationDelay: `${i * 2.3}s`, animationDuration: `${22 + i}s` }));
 const envDecorations = Array.from({ length: 24 }, (_, i) => ({ left: `${(i * 17 + 5) % 100}%`, animationDelay: `${i * 0.7}s`, animationDuration: `${12 + (i % 5) * 2}s`, fontSize: `${0.8 + (i % 3) * 0.4}rem`, content: i % 2 === 0 ? '✿' : '❤', color: i % 2 === 0 ? '#fcedd9' : '#ff8585' }));
@@ -209,6 +209,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const [playing, setPlaying] = useState(false);
   const [showMusicList, setShowMusicList] = useState(false);
   const [track, setTrack] = useState(0);
+    useEffect(() => {
+      if (tracksCount > 1) setTrack(Math.floor(Math.random() * tracksCount));
+    }, [tracksCount]);
   
   const tracksCount = invitation.musicTracks?.length || (invitation.musicUrl ? 1 : 0);
   useEffect(() => {
@@ -422,10 +425,14 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
 
   return <div className={styles.wrapper}>
     {trackUrl && <audio ref={audio} src={trackUrl} preload="metadata" loop={tracksCount === 1} onEnded={() => setTrack(index => tracksCount > 1 ? (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount : 0)} onError={() => setPlaying(false)} />}
-    {tracks.length > 0 && <div className={styles.musicControl}>
-      <button onClick={() => setPlaying(value => !value)} aria-pressed={playing} aria-label={playing ? 'Tắt nhạc' : 'Bật nhạc'}><MorphIcon icon={playing ? Pause : Music} size={16} /> {playing ? 'Tắt nhạc' : 'Bật nhạc'}</button>
-      {tracks.length > 1 && <select aria-label="Chọn nhạc" value={track} onChange={e => { setTrack(Number(e.target.value)); setPlaying(true); }}>{tracks.map((item, index) => <option key={index} value={index}>{item.name || `Bài ${index + 1}`}</option>)}</select>}
-    </div>}
+          {tracks.length > 0 && <div className={styles.musicControl}>
+        <div className={styles.musicControlButtons}>
+          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài trước"><SkipBack size={16} /></button>}
+          <button onClick={() => setPlaying(value => !value)} aria-pressed={playing} aria-label={playing ? 'Tắt nhạc' : 'Bật nhạc'}><MorphIcon icon={playing ? Pause : Music} size={16} /></button>
+          {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); }} aria-label="Bài tiếp"><SkipForward size={16} /></button>}
+        </div>
+        {tracks[track]?.name && <div className={styles.musicTitleWrapper}>{tracks[track].name}</div>}
+      </div>}
       {/* ENVELOPE OVERLAY */}
       <div className={`${styles.envelopeScreen} ${opened ? styles.isOpened : ''}`} style={invitation.heroBgUrl ? { backgroundImage: `linear-gradient(0deg, #302719a0, #30271960), url("${invitation.heroBgUrl}")` } : undefined}>
         <div className={styles.envFloatingLayer} aria-hidden="true">
