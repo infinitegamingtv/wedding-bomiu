@@ -66,3 +66,44 @@
 .scheduleRow { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
 .scheduleRow > * { flex: 1; }
 .scheduleRow button { flex: 0 0 auto; }
+
+/* Skeleton & Loading States */
+.skeleton {
+  background: linear-gradient(90deg, #f3f3f3 25%, #e2e2e2 50%, #f3f3f3 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite linear;
+  border-radius: 6px;
+}
+
+@keyframes skeletonLoading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeletonText { height: 16px; margin-bottom: 8px; width: 100%; }
+.skeletonText.short { width: 60%; }
+.skeletonTitle { height: 28px; margin-bottom: 24px; width: 40%; }
+.skeletonCard { height: 120px; border-radius: 12px; }
+.skeletonTable { height: 300px; border-radius: 12px; margin-top: 24px; }
+.skeletonAvatar { width: 32px; height: 32px; border-radius: 50%; }
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  border-top-color: #C5A880;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}

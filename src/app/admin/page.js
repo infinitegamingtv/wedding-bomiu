@@ -88,7 +88,27 @@ export default function AdminPage() {
     } catch (err) { alert(err.message); }
   };
 
-  if (loading) return <div style={{padding: '50px', textAlign: 'center'}}>Đang tải dữ liệu...</div>;
+  if (loading) {
+    return (
+      <div className={styles.adminLayout}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarLogo}>BOMIUX ADMIN</div>
+          <div className={styles.navMenu}>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className={`${styles.skeleton}`} style={{height: 40, marginBottom: 8}}></div>
+            ))}
+          </div>
+        </aside>
+        <main className={styles.mainContent} aria-busy="true">
+           <div className={`${styles.skeleton} ${styles.skeletonTitle}`}></div>
+           <div className={styles.statsGrid}>
+              {[1, 2, 3].map(i => <div key={i} className={`${styles.skeleton} ${styles.skeletonCard}`}></div>)}
+           </div>
+           <div className={`${styles.skeleton} ${styles.skeletonTable}`}></div>
+        </main>
+      </div>
+    );
+  }
   if (!data) return <div style={{padding: '50px', textAlign: 'center'}}>Lỗi tải dữ liệu. <button onClick={logout}>Đăng nhập lại</button></div>;
 
   const allRows = guestRows(data);
@@ -432,7 +452,7 @@ export default function AdminPage() {
         <div className={styles.floatingSave}>
           <span style={{fontWeight: 600}}>⚠️ Bạn có thay đổi chưa lưu!</span>
           <button className={styles.buttonPrimary} style={{boxShadow: 'none', background: '#fff', color: '#222', display: 'flex', alignItems: 'center', gap: '6px'}} onClick={handlePublish} disabled={saving}>
-            {saving ? 'Đang lưu...' : <><Icon icon={Save} size={16} /> Lưu thay đổi</>}
+            {saving ? <><span className={styles.spinner} role="status" aria-label="Đang lưu"></span> Đang lưu...</> : <><Icon icon={Save} size={16} /> Lưu thay đổi</>}
           </button>
         </div>
       )}
