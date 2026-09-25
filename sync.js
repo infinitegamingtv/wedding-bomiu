@@ -2,7 +2,7 @@ const fs = require('fs');
 
 async function sync() {
   const password = 'bomiu';
-  const baseUrl = 'https://wedding-bomiu.vercel.app';
+  const baseUrl = 'https://damcuoibomiu.vercel.app';
   
   console.log('Logging in...');
   const loginRes = await fetch(`${baseUrl}/api/auth`, {
