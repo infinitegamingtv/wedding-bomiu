@@ -1,4 +1,4 @@
-﻿.adminLayout { display: flex; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; background: #f8f9fa; color: #333; }
+.adminLayout { display: flex; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; background: #f8f9fa; color: #333; }
 .sidebar { width: 260px; background: #fff; border-right: 1px solid #eaeaea; display: flex; flex-direction: column; padding: 24px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .sidebarLogo { font-size: 1.5rem; font-weight: 700; color: #C5A880; padding: 0 24px 24px; border-bottom: 1px solid #eaeaea; margin-bottom: 16px; text-align: center; }
 .navMenu { display: flex; flex-direction: column; gap: 8px; padding: 0 16px; flex: 1; }
@@ -106,4 +106,130 @@
   align-items: center;
   justify-content: center;
   min-height: 200px;
+}
+
+/* Interactive Stat Cards */
+.clickableCard {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  user-select: none;
+  position: relative;
+}
+.clickableCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  border-color: #C5A880;
+}
+.clickableCard:active {
+  transform: translateY(0);
+}
+.cardHint {
+  font-size: 0.75rem;
+  color: #C5A880;
+  font-weight: 500;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Guest Detail Modal */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+.modalBox {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+  overflow: hidden;
+  animation: scaleUp 0.2s ease-out;
+}
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fdfaf5;
+}
+.modalTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #333;
+}
+.modalSubtitle {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  color: #777;
+}
+.modalCloseBtn {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  color: #888;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+.modalCloseBtn:hover {
+  background: #eee;
+  color: #222;
+}
+.modalBody {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.guestItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.guestItem:hover {
+  background: #faf8f5;
+}
+.guestItem:last-child {
+  border-bottom: none;
+}
+.guestName {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+.guestMeta {
+  font-size: 0.8rem;
+  color: #777;
+  margin-top: 2px;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleUp {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
