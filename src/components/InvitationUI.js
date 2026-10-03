@@ -422,7 +422,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       </div>}
       {/* ENVELOPE OVERLAY */}
       <div className={`${styles.envelopeScreen} ${opened ? styles.isOpened : ''}`}>
-        {invitation.heroBgUrl && <><Image className={styles.bgImage} src={invitation.heroBgUrl} alt="" fill priority sizes="100vw" /><span className={styles.envOverlay} aria-hidden="true" /></>}
+        {invitation.heroBgUrl && <><Image className={styles.bgImage} src={invitation.heroBgUrl} alt="" fill priority quality={90} sizes="100vw" /><span className={styles.envOverlay} aria-hidden="true" /></>}
         <div className={styles.envFloatingLayer} aria-hidden="true">
           {envDecorations.map((dec, index) => <span key={index} className={styles.envFloatingItem} style={{ left: dec.left, animationDelay: dec.animationDelay, animationDuration: dec.animationDuration, fontSize: dec.fontSize, color: dec.color }}>{dec.content}</span>)}
         </div>
@@ -459,7 +459,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         </nav>
         <main className={styles.mainContent}>
         <section id="hero" className={styles.hero}>
-          {invitation.heroBgUrl && <Image className={styles.heroBgImage} src={invitation.heroBgUrl} alt="" fill priority sizes="100vw" />}
+          {invitation.heroBgUrl && <Image className={styles.heroBgImage} src={invitation.heroBgUrl} alt="" fill priority quality={90} sizes="100vw" />}
           <div className={styles.heroContent}>
             {invitation.logoUrl && <Image className={styles.heroLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} priority />}
             <p className={styles.eyebrow}>{texts.heroSubtitle || 'Lễ Thành Hôn'}</p>

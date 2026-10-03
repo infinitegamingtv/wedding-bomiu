@@ -11,7 +11,10 @@ for (const name of await fs.readdir(upload)) {
   if (!/\.(jpe?g|png|webp)$/i.test(name)) continue;
   const bytes = await fs.readFile(path.join(upload, name));
   if (bytes.length < 150000) continue;
-  const optimized = await sharp(bytes, { limitInputPixels: 60000000 }).rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+  const isHero = name.includes('TVBA9926-2');
+  const maxDim = isHero ? 2880 : 2000;
+  const quality = isHero ? 90 : 85;
+  const optimized = await sharp(bytes, { limitInputPixels: 60000000 }).rotate().resize({ width: maxDim, height: maxDim, fit: 'inside', withoutEnlargement: true }).webp({ quality }).toBuffer();
   if (optimized.length >= bytes.length) continue;
   const filename = createHash('sha256').update(bytes).digest('hex').slice(0, 24) + '.webp';
   await fs.writeFile(path.join(output, filename), optimized);
