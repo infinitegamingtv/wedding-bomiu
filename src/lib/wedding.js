@@ -36,7 +36,7 @@ export function guestRows(data) {
     const eventIdStr = response?.eventId || guest.eventId || events[0]?.id || '';
     const eventIds = typeof eventIdStr === 'string' ? eventIdStr.split(',').filter(Boolean) : [];
     const location = eventIds.map(id => events.find(e => e.id === id)?.name).filter(Boolean).join(' + ') || response?.location || 'Chưa rõ';
-    return { ...response, guestId: guest.id, name: response?.name || guest.guestName, group: guest.group || '', eventIds, location, attending: response?.attending || 'pending', count: response?.count || 0 };
+    return { ...response, guestId: guest.id, name: response?.name || guest.guestName, group: guest.group || '', sent: Boolean(guest.sent), eventIds, location, attending: response?.attending || 'pending', count: response?.count || 0 };
   });
   for (const r of responses) {
     if (linked.has(r.id)) continue;

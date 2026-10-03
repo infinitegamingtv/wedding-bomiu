@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterEvent, setFilterEvent] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSent, setFilterSent] = useState('all');
   const [guestModal, setGuestModal] = useState(null);
 
       useEffect(() => {
@@ -109,6 +110,12 @@ export default function AdminPage() {
     setBulkGuestNames('');
   };
   const removeGuestLink = (id) => setData(prev => ({ ...prev, links: prev.links.filter(g => g.id !== id) }));
+  const toggleGuestSent = (guestId) => {
+    setData(prev => ({
+      ...prev,
+      links: (prev.links || []).map(link => link.id === guestId ? { ...link, sent: !link.sent } : link)
+    }));
+  };
   
   const deleteRsvp = async id => {
     if (!confirm('Xóa phản hồi này?')) return;
@@ -165,6 +172,7 @@ export default function AdminPage() {
   const crmRows = allRows.filter(r => 
     (filterEvent === 'all' || (r.eventIds && r.eventIds.includes(filterEvent))) && 
     (filterStatus === 'all' || r.attending === filterStatus) && 
+    (filterSent === 'all' || (filterSent === 'sent' ? r.sent : !r.sent)) &&
     r.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
@@ -392,6 +400,7 @@ export default function AdminPage() {
                 <input className={styles.input} style={{flex: 1, minWidth: '200px'}} placeholder="Tìm tên khách..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 <select className={styles.select} style={{width: '200px'}} value={filterEvent} onChange={e => setFilterEvent(e.target.value)}><option value="all">Tất cả tiệc</option>{data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select>
                 <select className={styles.select} style={{width: '150px'}} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}><option value="all">Mọi trạng thái</option><option value="pending">Chờ phản hồi</option><option value="yes">Tham dự</option><option value="no">Không đi</option></select>
+                <select className={styles.select} style={{width: '150px'}} value={filterSent} onChange={e => setFilterSent(e.target.value)}><option value="all">Tất cả gửi thiệp</option><option value="sent">Đã gửi link</option><option value="unsent">Chưa gửi link</option></select>
               </div>
               
               <div className={styles.tableWrapper}>
@@ -399,6 +408,7 @@ export default function AdminPage() {
                   <thead>
                     <tr>
                       <th>Khách mời</th>
+                      <th style={{textAlign: 'center'}}>Đã gửi link?</th>
                       <th>Link Gửi Khách</th>
                       <th>Phản hồi</th>
                       <th>Chi tiết RSVP</th>
@@ -412,6 +422,20 @@ export default function AdminPage() {
                           <strong>{row.name}</strong> 
                           {row.group && <span className={styles.groupBadge}>{row.group}</span>}
                           {row.legacy && <span className={`${styles.badge} ${styles.neutral}`}>Tự RSVP</span>}
+                        </td>
+                        <td style={{textAlign: 'center'}}>
+                          {row.guestId ? (
+                            <label className={`${styles.sentToggle} ${row.sent ? styles.sentTrue : styles.sentFalse}`} title="Bấm để tick đã gửi hoặc chưa gửi">
+                              <input 
+                                type="checkbox" 
+                                checked={!!row.sent} 
+                                onChange={() => toggleGuestSent(row.guestId)} 
+                              />
+                              <span>{row.sent ? 'Đã gửi' : 'Chưa gửi'}</span>
+                            </label>
+                          ) : (
+                            <span style={{color: '#bbb', fontSize: '0.8rem'}}>—</span>
+                          )}
                         </td>
                         <td>
                           {row.guestId ? (
@@ -443,7 +467,7 @@ export default function AdminPage() {
                         </td>
                       </tr>
                     ))}
-                    {!crmRows.length && <tr><td colSpan="5" style={{textAlign: 'center'}}>Không có dữ liệu phù hợp.</td></tr>}
+                    {!crmRows.length && <tr><td colSpan="6" style={{textAlign: 'center'}}>Không có dữ liệu phù hợp.</td></tr>}
                   </tbody>
                 </table>
               </div>
