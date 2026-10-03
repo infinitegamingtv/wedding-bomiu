@@ -13,10 +13,11 @@ export default function ButtonSfx() {
       if (!button || button.disabled) return;
 
       try {
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) return;
         const AudioContextType = window.AudioContext || window.webkitAudioContext;
         if (!AudioContextType) return;
         context ||= new AudioContextType();
-        if (context.state === 'suspended') void context.resume();
+        if (context.state === 'suspended') void context.resume().catch(() => {});
 
         const now = context.currentTime;
         const oscillator = context.createOscillator();

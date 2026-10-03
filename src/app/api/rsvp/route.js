@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { revalidatePath } from 'next/cache';
 import { getWeddingData, saveResponse } from '@/lib/data';
 import { VISITOR_COOKIE, readToken, signToken, cookieOptions, sameOrigin, requireAdmin, limitRequests, clientAddress } from '@/lib/auth';
 import { json, failure, invalid, readJson } from '@/lib/http';
@@ -42,6 +43,7 @@ export async function POST(request) {
     const previous = data.rsvps.find(r => r.id === who.id);
     const record = { ...who, name: body.name.trim(), attending: body.attending, eventId: eventIds.join(','), location: eventObjects.map(e => e.name).join(' + '), count: body.attending === 'yes' ? body.count : 0, message: body.message.trim(), submittedAt: previous?.submittedAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
     await saveResponse(record);
+    revalidatePath('/');
     return json({ success: true, rsvp: record, wish: { id: record.id, name: record.name, message: record.message } });
   } catch (error) { return failure(error); }
 }

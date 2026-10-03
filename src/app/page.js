@@ -2,7 +2,7 @@ import InvitationUI from '@/components/InvitationUI';
 import { getWeddingData } from '@/lib/data';
 import { publicWedding } from '@/lib/wedding';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export default async function Home() {
   const data = await getWeddingData();

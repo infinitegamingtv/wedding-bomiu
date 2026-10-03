@@ -10,8 +10,21 @@ import { Music, Pause, SkipBack, SkipForward, X, ArrowUpRight, ArrowDown, ArrowL
 
 const flowerItems = Array.from({ length: 8 }, (_, i) => ({ left: `${(i * 13 + 7) % 100}%`, animationDelay: `${i * 2.3}s`, animationDuration: `${22 + i}s` }));
 const envDecorations = Array.from({ length: 24 }, (_, i) => ({ left: `${(i * 17 + 5) % 100}%`, animationDelay: `${i * 0.7}s`, animationDuration: `${12 + (i % 5) * 2}s`, fontSize: `${0.8 + (i % 3) * 0.4}rem`, content: i % 2 === 0 ? '✿' : '❤', color: i % 2 === 0 ? '#fcedd9' : '#ff8585' }));
-const formatDate = date => date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
-const formatTime = date => date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' });
+const formatDate = date => {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+  const vnTime = new Date(date.getTime() + (7 * 60 + date.getTimezoneOffset()) * 60000);
+  const d = String(vnTime.getDate()).padStart(2, '0');
+  const m = String(vnTime.getMonth() + 1).padStart(2, '0');
+  const y = vnTime.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+const formatTime = date => {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+  const vnTime = new Date(date.getTime() + (7 * 60 + date.getTimezoneOffset()) * 60000);
+  const h = String(vnTime.getHours()).padStart(2, '0');
+  const min = String(vnTime.getMinutes()).padStart(2, '0');
+  return `${h}:${min}`;
+};
 const noOrphan = str => {
   if (typeof str !== 'string') return str;
   let s = str.trim();
@@ -411,7 +424,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   };
 
   return <div className={styles.wrapper}>
-    {trackUrl && <audio ref={audio} src={trackUrl} preload="metadata" loop={tracksCount === 1} onEnded={() => { setTrack(index => tracksCount > 1 ? (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount : 0); showTitleBriefly(); }} onError={() => setPlaying(false)} />}
+    {trackUrl && <audio ref={audio} src={trackUrl} preload="none" loop={tracksCount === 1} onEnded={() => { setTrack(index => tracksCount > 1 ? (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount : 0); showTitleBriefly(); }} onError={() => setPlaying(false)} />}
           {tracks.length > 0 && <div className={styles.musicControl}>
         <div className={styles.musicControlButtons}>
           {tracks.length > 1 && <button onClick={() => { setTrack(index => (index + 1 + Math.floor(Math.random() * (tracksCount - 1))) % tracksCount); setPlaying(true); showTitleBriefly(); }} aria-label="Bài trước"><MorphIcon icon={SkipBack} size={16} /></button>}

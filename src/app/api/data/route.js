@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { getWeddingData, setWeddingData } from '@/lib/data';
 import { requireAdmin, sameOrigin } from '@/lib/auth';
 import { json, failure, readJson, invalid } from '@/lib/http';
@@ -23,6 +24,7 @@ export async function POST(request) {
     }
     for (const key of ['albums', 'stories']) if (!Array.isArray(body[key])) invalid('Danh sách ảnh hoặc câu chuyện không hợp lệ.');
     await setWeddingData(body);
+    revalidatePath('/');
     return json(await getWeddingData());
   } catch (error) { return failure(error); }
 }
