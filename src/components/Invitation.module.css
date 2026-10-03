@@ -253,3 +253,8 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Optimized background images (next/image fill) */
+.bgImage { object-fit: cover; object-position: center; z-index: 0; }
+.envOverlay { position: absolute; inset: 0; z-index: 0; background: linear-gradient(0deg, #302719a0, #30271960); pointer-events: none; }
+.heroBgImage { object-fit: cover; object-position: center; z-index: -2; }

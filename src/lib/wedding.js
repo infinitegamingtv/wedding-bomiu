@@ -11,7 +11,13 @@ export function eventsFor(data) {
 
 export function publicWedding(data) {
   // Never serialize guest links or attendance records to visitors.
-  const image = url => imageManifest[url] || url;
+  const image = url => {
+    if (!url) return url;
+    if (imageManifest[url]) return imageManifest[url];
+    // Google Drive/Photos links (lh3.googleusercontent.com/...=s4000) default to huge originals.
+    if (/^https:\/\/lh\d\.googleusercontent\.com\//.test(url)) return url.replace(/=[swh]\d+(-[a-z0-9-]+)?$/i, '') + '=w1600';
+    return url;
+  };
   const invitation = { ...data.invitation };
   for (const key of ['heroBgUrl', 'groomAvatarUrl', 'brideAvatarUrl', 'guestbookPhotoUrl']) invitation[key] = image(invitation[key]);
   return { invitation, albums: (data.albums || []).map(image), stories: (data.stories || []).map(story => ({ ...story, imageUrl: image(story.imageUrl) })),

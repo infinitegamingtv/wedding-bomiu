@@ -421,7 +421,8 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         {tracks[track]?.name && <div className={`${styles.musicTitleWrapper} ${showMusicTitle ? styles.showTitle : ''}`}>{tracks[track].name}</div>}
       </div>}
       {/* ENVELOPE OVERLAY */}
-      <div className={`${styles.envelopeScreen} ${opened ? styles.isOpened : ''}`} style={invitation.heroBgUrl ? { backgroundImage: `linear-gradient(0deg, #302719a0, #30271960), url("${invitation.heroBgUrl}")` } : undefined}>
+      <div className={`${styles.envelopeScreen} ${opened ? styles.isOpened : ''}`}>
+        {invitation.heroBgUrl && <><Image className={styles.bgImage} src={invitation.heroBgUrl} alt="" fill priority sizes="100vw" /><span className={styles.envOverlay} aria-hidden="true" /></>}
         <div className={styles.envFloatingLayer} aria-hidden="true">
           {envDecorations.map((dec, index) => <span key={index} className={styles.envFloatingItem} style={{ left: dec.left, animationDelay: dec.animationDelay, animationDuration: dec.animationDuration, fontSize: dec.fontSize, color: dec.color }}>{dec.content}</span>)}
         </div>
@@ -457,7 +458,8 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           <a href="#rsvp" className={styles.navCta}><InteractiveIcon defaultIcon={CalendarCheck} /> Tham dự</a>
         </nav>
         <main className={styles.mainContent}>
-        <section id="hero" className={styles.hero} style={invitation.heroBgUrl ? { backgroundImage: `url("${invitation.heroBgUrl}")` } : undefined}>
+        <section id="hero" className={styles.hero}>
+          {invitation.heroBgUrl && <Image className={styles.heroBgImage} src={invitation.heroBgUrl} alt="" fill priority sizes="100vw" />}
           <div className={styles.heroContent}>
             {invitation.logoUrl && <Image className={styles.heroLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} priority />}
             <p className={styles.eyebrow}>{texts.heroSubtitle || 'Lễ Thành Hôn'}</p>
@@ -496,13 +498,13 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           {(invitation.groomBio || invitation.brideBio || invitation.groomAvatarUrl || invitation.brideAvatarUrl) && (
             <div className={styles.coupleProfiles}>
               <div>
-                {invitation.groomAvatarUrl && <Image src={invitation.groomAvatarUrl} alt={invitation.groom} width={80} height={80} loading="eager" />}
+                {invitation.groomAvatarUrl && <Image src={invitation.groomAvatarUrl} alt={invitation.groom} width={80} height={80} loading="lazy" />}
                 <strong>{invitation.groom}</strong>
                 <p>{invitation.groomBio}</p>
               </div>
               <span className={styles.coupleDivider} aria-hidden="true">&</span>
               <div>
-                {invitation.brideAvatarUrl && <Image src={invitation.brideAvatarUrl} alt={invitation.bride} width={80} height={80} loading="eager" />}
+                {invitation.brideAvatarUrl && <Image src={invitation.brideAvatarUrl} alt={invitation.bride} width={80} height={80} loading="lazy" />}
                 <strong>{invitation.bride}</strong>
                 <p>{invitation.brideBio}</p>
               </div>
@@ -537,7 +539,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                       {!subValidDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{sub.lunarDate && <p className={styles.muted}>Tức ngày {sub.lunarDate}</p>}
                       <h3>{texts.locationPrefix || 'Tại'} {noOrphan(sub.venue)}</h3><p>{noOrphan(sub.address)}</p>
                       <div className={styles.actions}>{subValidDate && <a className={styles.secondaryButton} href={subCalendarUrl} target="_blank" rel="noreferrer">Lưu lịch</a>}{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
-                      {subEmbed && <div className={styles.mapContainer} style={{ marginTop: '24px' }}><iframe title={`Bản đồ ${sub.name}`} src={subEmbed} loading="eager" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+                      {subEmbed && <div className={styles.mapContainer} style={{ marginTop: '24px' }}><iframe title={`Bản đồ ${sub.name}`} src={subEmbed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
                     </div>
                   );
                 })}
@@ -555,10 +557,10 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           )}
 
           {schedule.length > 0 && <div className={styles.itinerary}><h3 className={styles.subheading}>{texts.itineraryTitle || 'Lịch Trình'}</h3><ol className={styles.schedule}>{schedule.map((item, index) => <li key={item.id || index}><span className={styles.stepNumber}>{String(index + 1).padStart(2, '0')}</span><strong>{item.time}</strong><span>{item.event || item.label}</span></li>)}</ol></div>}
-          {embed && <div className={styles.mapContainer}><iframe title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} loading="eager" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+          {embed && <div className={styles.mapContainer}><iframe title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
         </FadeInSection>
 
-        {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <Image src={story.imageUrl} alt={story.title} width={600} height={450} loading="eager" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
+        {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <Image src={story.imageUrl} alt={story.title} width={600} height={450} loading="lazy" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
 
         {albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
           <div className={styles.galleryContainer}>
@@ -568,7 +570,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
               <div className={styles.horizontalScroll} ref={scrollRef}>
                 {loopAlbums.map((url, index) => (
                   <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${(index % albums.length) + 1}`} onClick={() => setZoom(url)}>
-                    <img src={url} alt={`Ảnh cưới ${(index % albums.length) + 1}`} loading="eager" decoding="async" />
+                    <Image src={url} alt={`Ảnh cưới ${(index % albums.length) + 1}`} width={600} height={800} sizes="(max-width: 600px) 75vw, 320px" loading="lazy" />
                   </button>
                 ))}
               </div>
@@ -609,7 +611,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                   {invitation.accountNumber && <p><strong>Số tài khoản:</strong> <span className={styles.bankNumber}>{invitation.accountNumber}</span></p>}
                 </div>
               )}
-              <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="eager" />
+              <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" />
               <div className={styles.qrActions}>
                 <a href={invitation.qrCodeUrl} download="QR_Mung_Cuoi.jpg" target="_blank" rel="noreferrer" className={styles.primaryButton} onClick={handleDownloadQR}>
                    Lưu ảnh QR
@@ -622,7 +624,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           )}
         </FadeInSection>}
 
-        <FadeInSection id="guestbook"><p className={styles.eyebrow}>YÊU THƯƠNG ĐƯỢC VIẾT THÀNH LỜI</p><h2 className={styles.sectionTitle}>{texts.guestbookTitle || 'Sổ Lưu Bút'} <span className={styles.guestbookEmoji}>🍀💚</span></h2>{invitation.guestbookPhotoUrl && <Image className={styles.guestbookPhoto} src={invitation.guestbookPhotoUrl} alt="Kỷ niệm của chúng mình" width={800} height={600} loading="eager" />}<div className={styles.wishes}>{wishes.length ? wishes.map((wish, index) => <blockquote key={wish.id || index}><p>“{wish.message}”</p><cite>— {wish.name}</cite></blockquote>) : <p className={styles.intro}>Hãy là người đầu tiên gửi lời chúc cho chúng mình nhé.</p>}</div><a className={styles.secondaryButton} href="#rsvp">Gửi một lời chúc</a></FadeInSection>
+        <FadeInSection id="guestbook"><p className={styles.eyebrow}>YÊU THƯƠNG ĐƯỢC VIẾT THÀNH LỜI</p><h2 className={styles.sectionTitle}>{texts.guestbookTitle || 'Sổ Lưu Bút'} <span className={styles.guestbookEmoji}>🍀💚</span></h2>{invitation.guestbookPhotoUrl && <Image className={styles.guestbookPhoto} src={invitation.guestbookPhotoUrl} alt="Kỷ niệm của chúng mình" width={800} height={600} loading="lazy" />}<div className={styles.wishes}>{wishes.length ? wishes.map((wish, index) => <blockquote key={wish.id || index}><p>“{wish.message}”</p><cite>— {wish.name}</cite></blockquote>) : <p className={styles.intro}>Hãy là người đầu tiên gửi lời chúc cho chúng mình nhé.</p>}</div><a className={styles.secondaryButton} href="#rsvp">Gửi một lời chúc</a></FadeInSection>
 
         
         <footer className={styles.footer}><span className={styles.eyebrow}>CẢM ƠN VÌ LÀ MỘT PHẦN NGÀY VUI</span><p className={styles.footerNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</p><button className={styles.secondaryButton} onClick={copyLink}><InteractiveIcon defaultIcon={Copy} isActive={!!copyStatus} activeIcon={Check} size={16} style={{ marginRight: 6 }} /> Sao chép đường dẫn thiệp</button><p className={styles.copyStatus} role="status">{copyStatus}</p><a href="#hero" style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Về đầu trang <InteractiveIcon defaultIcon={ArrowUp} hoverIcon={ArrowUp} size={16} /></a></footer>
