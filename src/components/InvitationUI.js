@@ -231,6 +231,61 @@ const LuxuryGiftBox = ({ idSuffix = '1' }) => (
   </svg>
 );
 
+function LazyMap({ src, title, className, style }) {
+  const [show, setShow] = useState(false);
+  if (!show) {
+    return (
+      <div
+        className={className}
+        style={{
+          ...style,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 180,
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(8px)',
+          cursor: 'pointer',
+          padding: '24px 16px',
+          textAlign: 'center',
+          border: '1px dashed #d6c6b0',
+        }}
+        onClick={() => setShow(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShow(true)}
+        aria-label="Nhấn để tải bản đồ Google Maps"
+      >
+        <MorphIcon icon={MapPin} size={32} style={{ color: 'var(--color-gold)', marginBottom: 8 }} />
+        <strong style={{ color: '#59472d', fontSize: '0.95rem', marginBottom: 4 }}>
+          Bản đồ địa điểm tổ chức
+        </strong>
+        <span style={{ fontSize: '0.8rem', color: '#7b6e5c', marginBottom: 12 }}>
+          Chạm vào đây để xem bản đồ trực tiếp
+        </span>
+        <span
+          className={styles.secondaryButton}
+          style={{ pointerEvents: 'none', padding: '6px 18px', fontSize: '0.82rem' }}
+        >
+          Xem bản đồ
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className={className} style={style}>
+      <iframe
+        title={title}
+        src={src}
+        loading="lazy"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+      />
+    </div>
+  );
+}
+
 export default function InvitationUI({ data, guestName, guestSlug, initialEventId }) {
   let { invitation, albums = [], stories = [], events = [], rsvps = [], texts = {} } = data;
   const [opened, setOpened] = useState(false);
@@ -251,51 +306,6 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const [zoom, setZoom] = useState(null);
   const [status, setStatus] = useState('idle');
   const scrollRef = useRef(null);
-  const loopAlbums = albums.length > 0 ? [...albums, ...albums, ...albums] : [];
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || albums.length === 0) return;
-    
-    let isHandlingScroll = false;
-    
-    const handleScroll = () => {
-      if (isHandlingScroll) return;
-      
-      const itemWidth = el.scrollWidth / (albums.length * 3);
-      const setWidth = itemWidth * albums.length;
-      
-      // If we scroll before the middle set
-      if (el.scrollLeft < setWidth - (itemWidth / 2)) {
-        isHandlingScroll = true;
-        el.style.scrollSnapType = 'none';
-        el.scrollLeft += setWidth;
-        el.style.scrollSnapType = 'x mandatory';
-        requestAnimationFrame(() => { isHandlingScroll = false; });
-      }
-      // If we scroll past the middle set
-      else if (el.scrollLeft > setWidth * 2 - (itemWidth / 2)) {
-        isHandlingScroll = true;
-        el.style.scrollSnapType = 'none';
-        el.scrollLeft -= setWidth;
-        el.style.scrollSnapType = 'x mandatory';
-        requestAnimationFrame(() => { isHandlingScroll = false; });
-      }
-    };
-
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    
-    // Initial jump to middle set
-    setTimeout(() => {
-      isHandlingScroll = true;
-      el.style.scrollSnapType = 'none';
-      el.scrollLeft = (el.scrollWidth / 3);
-      el.style.scrollSnapType = 'x mandatory';
-      setTimeout(() => { isHandlingScroll = false; }, 50);
-    }, 100);
-
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, [albums.length]);
 
   const scrollGallery = (direction) => {
     if (scrollRef.current) {
@@ -577,7 +587,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
                       {!subValidDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{sub.lunarDate && <p className={styles.muted}>Tức ngày {sub.lunarDate}</p>}
                       <h3>{texts.locationPrefix || 'Tại'} {noOrphan(sub.venue)}</h3><p>{noOrphan(sub.address)}</p>
                       <div className={styles.actions}>{subValidDate && <a className={styles.secondaryButton} href={subCalendarUrl} target="_blank" rel="noreferrer">Lưu lịch</a>}{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
-                      {subEmbed && <div className={styles.mapContainer} style={{ marginTop: '24px' }}><iframe title={`Bản đồ ${sub.name}`} src={subEmbed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+                      {subEmbed && <LazyMap className={styles.mapContainer} style={{ marginTop: '24px' }} title={`Bản đồ ${sub.name}`} src={subEmbed} />}
                     </div>
                   );
                 })}
@@ -595,7 +605,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           )}
 
           {schedule.length > 0 && <div className={styles.itinerary}><h3 className={styles.subheading}>{texts.itineraryTitle || 'Lịch Trình'}</h3><ol className={styles.schedule}>{schedule.map((item, index) => <li key={item.id || index}><span className={styles.stepNumber}>{String(index + 1).padStart(2, '0')}</span><strong>{item.time}</strong><span>{item.event || item.label}</span></li>)}</ol></div>}
-          {embed && <div className={styles.mapContainer}><iframe title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
+          {embed && <LazyMap className={styles.mapContainer} title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} />}
         </FadeInSection>
 
         {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <Image src={story.imageUrl} alt={story.title} width={600} height={450} loading="lazy" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
@@ -606,9 +616,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
               <InteractiveIcon defaultIcon={ArrowLeft} size={24} />
             </button>
               <div className={styles.horizontalScroll} ref={scrollRef}>
-                {loopAlbums.map((url, index) => (
-                  <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${(index % albums.length) + 1}`} onClick={() => setZoom(url)}>
-                    <Image src={url} alt={`Ảnh cưới ${(index % albums.length) + 1}`} width={600} height={800} sizes="(max-width: 600px) 75vw, 320px" loading="lazy" />
+                {albums.map((url, index) => (
+                  <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
+                    <Image src={url} alt={`Ảnh cưới ${index + 1}`} width={600} height={800} sizes="(max-width: 600px) 75vw, 320px" loading="lazy" />
                   </button>
                 ))}
               </div>
@@ -669,19 +679,23 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       </main>
     </div>
     {zoom && <PhotoDialog src={zoom} onClose={() => setZoom(null)} />}
-    <div className={`${styles.mascot} ${styles.mascotRight}`} aria-label="Linh vật chó">
-      <Mascot
-        directions="/mascots/pug-directions.webp"
-        reactions="/mascots/pug-reactions.webp"
-        size={100}
-      />
-    </div>
-    <div className={`${styles.mascot} ${styles.mascotLeft}`} aria-label="Linh vật mèo">
-      <Mascot
-        directions="/mascots/cat-directions.webp"
-        reactions="/mascots/cat-reactions.webp"
-        size={100}
-      />
-    </div>
+    {opened && (
+      <>
+        <div className={`${styles.mascot} ${styles.mascotRight}`} aria-label="Linh vật chó">
+          <Mascot
+            directions="/mascots/pug-directions.webp"
+            reactions="/mascots/pug-reactions.webp"
+            size={100}
+          />
+        </div>
+        <div className={`${styles.mascot} ${styles.mascotLeft}`} aria-label="Linh vật mèo">
+          <Mascot
+            directions="/mascots/cat-directions.webp"
+            reactions="/mascots/cat-reactions.webp"
+            size={100}
+          />
+        </div>
+      </>
+    )}
   </div>;
 }
