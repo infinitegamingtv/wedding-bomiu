@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import styles from './admin.module.css';
 import EventEditor from '@/components/EventEditor';
 import { guestRows, csvFor } from '@/lib/wedding';
-import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2 } from 'lucide';
+import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle } from 'lucide';
 import { MorphIcon } from 'morphicons/react';
 
 const Icon = ({ icon, size = 18, ...props }) => <MorphIcon icon={icon} size={size} {...props} />;
@@ -22,6 +22,7 @@ export default function AdminPage() {
   
   const [bulkGuestNames, setBulkGuestNames] = useState('');
   const [bulkEventId, setBulkEventId] = useState('');
+  const [bulkGroup, setBulkGroup] = useState('Bạn bè');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterEvent, setFilterEvent] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -102,7 +103,7 @@ export default function AdminPage() {
     if (!names.length) return;
     const newLinks = names.map(name => {
       const id = crypto.randomUUID();
-      return { id, slug: id.slice(0, 8), guestName: name, eventId: bulkEventId || data.events[0]?.id || '', isInvited: true };
+      return { id, slug: id.slice(0, 8), guestName: name, group: bulkGroup || 'Bạn bè', eventId: bulkEventId || data.events[0]?.id || '', isInvited: true };
     });
     setData(prev => ({ ...prev, links: [...(prev.links || []), ...newLinks] }));
     setBulkGuestNames('');
@@ -407,7 +408,11 @@ export default function AdminPage() {
                   <tbody>
                     {crmRows.map((row, i) => (
                       <tr key={row.id || row.guestId || i}>
-                        <td><strong>{row.name}</strong> {row.legacy && <span className={`${styles.badge} ${styles.neutral}`}>Tự RSVP</span>}</td>
+                        <td>
+                          <strong>{row.name}</strong> 
+                          {row.group && <span className={styles.groupBadge}>{row.group}</span>}
+                          {row.legacy && <span className={`${styles.badge} ${styles.neutral}`}>Tự RSVP</span>}
+                        </td>
                         <td>
                           {row.guestId ? (
                             <div className={styles.linkBox}>

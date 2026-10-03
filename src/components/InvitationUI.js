@@ -1,4 +1,5 @@
 'use client';
+import confetti from 'canvas-confetti';
 /* Existing originals are preserved; public photo URLs use generated WebP copies. */
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from 'react';
@@ -132,11 +133,20 @@ function FadeInSection({ children, id, className = '' }) {
 
 const Countdown = ({ date }) => {
   const [timeLeft, setTimeLeft] = useState(null);
+  const [isHappening, setIsHappening] = useState(false);
   useEffect(() => {
     const target = new Date(date).getTime();
     const update = () => {
-      const diff = target - new Date().getTime();
-      if (diff <= 0) return setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+      const now = new Date().getTime();
+      const diff = target - now;
+      if (diff <= 0) {
+        // If within 24 hours of target date, show "Hôm nay là ngày vui!"
+        if (Math.abs(diff) < 86400000) {
+          setIsHappening(true);
+        }
+        return setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+      }
+      setIsHappening(false);
       setTimeLeft({
         d: Math.floor(diff / 86400000),
         h: Math.floor((diff % 86400000) / 3600000),
@@ -148,6 +158,13 @@ const Countdown = ({ date }) => {
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, [date]);
+  if (isHappening) {
+    return (
+      <div style={{ margin: '14px 0', padding: '10px 20px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '30px', backdropFilter: 'blur(8px)', color: '#fff', fontSize: '0.95rem', fontWeight: 600 }}>
+        ✨ Hôm nay là ngày vui của chúng mình! ✨
+      </div>
+    );
+  }
   if (!timeLeft || (timeLeft.d === 0 && timeLeft.h === 0 && timeLeft.m === 0 && timeLeft.s === 0)) return null;
   return (
     <div className={styles.countdown}>
@@ -415,6 +432,14 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       if (!response.ok) throw new Error(result.error || 'Không thể lưu phản hồi');
       setNewWish(result.wish); setHasReply(true); setReplyError('');
       setStatus('success');
+      try {
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.65 },
+          colors: ['#C5A880', '#e6cca0', '#ffd700', '#ffffff', '#79603d']
+        });
+      } catch (e) {}
     } catch (err) { setReplyError(err.message); setStatus('error'); }
     finally { submitting.current = false; }
   };

@@ -36,13 +36,13 @@ export function guestRows(data) {
     const eventIdStr = response?.eventId || guest.eventId || events[0]?.id || '';
     const eventIds = typeof eventIdStr === 'string' ? eventIdStr.split(',').filter(Boolean) : [];
     const location = eventIds.map(id => events.find(e => e.id === id)?.name).filter(Boolean).join(' + ') || response?.location || 'Chưa rõ';
-    return { ...response, guestId: guest.id, name: response?.name || guest.guestName, eventIds, location, attending: response?.attending || 'pending', count: response?.count || 0 };
+    return { ...response, guestId: guest.id, name: response?.name || guest.guestName, group: guest.group || '', eventIds, location, attending: response?.attending || 'pending', count: response?.count || 0 };
   });
   for (const r of responses) {
     if (linked.has(r.id)) continue;
     const eventIds = typeof r.eventId === 'string' ? r.eventId.split(',').filter(Boolean) : [];
     const location = eventIds.map(id => events.find(e => e.id === id)?.name).filter(Boolean).join(' + ') || r.location || 'Chưa rõ';
-    rows.push({ ...r, eventIds, location, legacy: !r.guestId });
+    rows.push({ ...r, eventIds, location, group: '', legacy: !r.guestId });
   }
   return rows;
 }

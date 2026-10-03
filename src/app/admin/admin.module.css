@@ -233,3 +233,33 @@
   from { transform: scale(0.96); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+.buttonZalo {
+  background: #0068ff;
+  color: #fff;
+  border: 1px solid #0056d6;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  transition: all 0.2s;
+}
+.buttonZalo:hover {
+  background: #0052cc;
+  color: #fff;
+}
+.groupBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #f0f4f8;
+  color: #2d4b75;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 6px;
+}
