@@ -493,3 +493,137 @@
   color: #222;
 }
 
+/* Gift & Cash Registry (Sổ Tiền Mừng) */
+.presetGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.presetChip {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d8c3a5;
+  background: #fdfaf5;
+  color: #6b5335;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.presetChip:hover {
+  background: #ede0cc;
+}
+.presetChipActive {
+  background: #C5A880;
+  color: #fff;
+  border-color: #C5A880;
+}
+.presetChipClear {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #999;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.presetChipClear:hover {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+.moneyInput {
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #2e7d32;
+  width: 145px;
+  font-family: inherit;
+}
+.moneyInput:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.12);
+}
+.methodSelect {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fff;
+}
+.methodCash {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #c8e6c9;
+}
+.methodTransfer {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-color: #bbdefb;
+}
+.methodGold {
+  background: #fff8e1;
+  color: #f57f17;
+  border-color: #ffe082;
+}
+.giftNoteInput {
+  padding: 6px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  width: 100%;
+  min-width: 160px;
+  color: #444;
+}
+.giftNoteInput:focus {
+  outline: none;
+  border-color: #C5A880;
+}
+.giftMiniGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+.giftMiniCard {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.giftMiniCard:hover {
+  border-color: #C5A880;
+  background: #fdfaf5;
+}
+.giftMiniCardActive {
+  border-color: #C5A880;
+  background: #fdfaf5;
+  box-shadow: 0 2px 8px rgba(197, 168, 128, 0.2);
+}
+.privacyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #444;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.privacyBtnActive {
+  background: #333;
+  color: #fff;
+  border-color: #333;
+}
+
+

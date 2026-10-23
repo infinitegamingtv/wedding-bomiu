@@ -2,14 +2,23 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './admin.module.css';
 import EventEditor from '@/components/EventEditor';
-import { guestRows, csvFor } from '@/lib/wedding';
-import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle, Copy, Check } from 'lucide';
+import { guestRows, csvFor, giftCsvFor } from '@/lib/wedding';
+import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle, Copy, Check, Heart } from 'lucide';
 import { MorphIcon } from 'morphicons/react';
 
 const Icon = ({ icon, size = 18, ...props }) => <MorphIcon icon={icon} size={size} {...props} />;
 
-const DEFAULT_GROUPS = ['Bạn bè', 'Nhà Trai', 'Nhà Gái', 'Đồng nghiệp', 'Họ hàng', 'Khách VIP'];
+const DEFAULT_GROUPS = ['Bạn bè', 'Nhà Trai', 'Nhà Gái', 'Đồng nghiệp', 'Họ hàng', 'Khách Bố Mẹ', 'Khách VIP'];
 const DEFAULT_TEMPLATE = 'Thân mời {name} tới dự bữa tiệc chung vui cùng gia đình chúng mình nhé! Xem thiệp mời tại: {link}';
+const QUICK_AMOUNTS = [
+  { label: '300k', value: 300000 },
+  { label: '500k', value: 500000 },
+  { label: '1M', value: 1000000 },
+  { label: '1.5M', value: 1500000 },
+  { label: '2M', value: 2000000 },
+  { label: '3M', value: 3000000 },
+  { label: '5M', value: 5000000 },
+];
 
 export default function AdminPage() {
   const [data, setData] = useState(null);
@@ -33,13 +42,28 @@ export default function AdminPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSent, setFilterSent] = useState('all');
 
+  // Gift Registry (Sổ Tiền Mừng) States
+  const [hideMoney, setHideMoney] = useState(false);
+  const [giftSearch, setGiftSearch] = useState('');
+  const [giftFilterGroup, setGiftFilterGroup] = useState('all');
+  const [giftFilterEvent, setGiftFilterEvent] = useState('all');
+  const [giftFilterMethod, setGiftFilterMethod] = useState('all'); // 'all' | 'gifted' | 'ungifted' | 'cash' | 'transfer' | 'gold'
+
+  // Walk-in Envelope Form (Khách mừng phát sinh ngoài danh sách link)
+  const [walkInName, setWalkInName] = useState('');
+  const [walkInGroup, setWalkInGroup] = useState('Khách Bố Mẹ');
+  const [walkInEventId, setWalkInEventId] = useState('');
+  const [walkInAmount, setWalkInAmount] = useState('');
+  const [walkInMethod, setWalkInMethod] = useState('cash');
+  const [walkInNote, setWalkInNote] = useState('');
+
   // Table Estimation & Share Template
   const [seatsPerTable, setSeatsPerTable] = useState(10);
   const [inviteTemplate, setInviteTemplate] = useState(DEFAULT_TEMPLATE);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [copiedKey, setCopiedKey] = useState('');
 
-  // Modal State: { scope: 'all' | eventId, tab: 'yes' | 'pending' | 'no' | 'unsent' | 'sent' }
+  // Modal State: { scope: 'all' | eventId, tab: 'yes' | 'pending' | 'no' | 'unsent' | 'sent' | 'all' }
   const [guestModal, setGuestModal] = useState(null);
   const [modalSearch, setModalSearch] = useState('');
 
@@ -63,6 +87,8 @@ export default function AdminPage() {
       }
       const savedTpl = localStorage.getItem('wedding_invite_template');
       if (savedTpl) setInviteTemplate(savedTpl);
+      const savedHide = localStorage.getItem('wedding_hide_money');
+      if (savedHide === '1') setHideMoney(true);
     }
   }, []);
 
@@ -92,7 +118,6 @@ export default function AdminPage() {
     return () => { active = false; };
   }, []);
 
-  // Synchronize dataRef whenever data changes
   useEffect(() => {
     if (data) dataRef.current = data;
   }, [data]);
@@ -118,7 +143,6 @@ export default function AdminPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Lỗi tự động lưu');
 
-      // Merge new server revision while keeping any newer local edits if pendingSaveRef is true
       const nextMerged = pendingSaveRef.current
         ? { ...dataRef.current, revision: result.revision, rsvps: result.rsvps }
         : result;
@@ -223,6 +247,9 @@ export default function AdminPage() {
         group: bulkGroup || 'Bạn bè',
         eventId: bulkEventId || data.events[0]?.id || '',
         sent: false,
+        giftAmount: 0,
+        giftMethod: 'cash',
+        giftNote: '',
         isInvited: true
       };
     });
@@ -230,8 +257,62 @@ export default function AdminPage() {
     setBulkGuestNames('');
   };
 
+  // Add Walk-in Gift Envelope (Khách mừng phát sinh)
+  const addWalkInGift = (e) => {
+    if (e) e.preventDefault();
+    const name = walkInName.trim();
+    if (!name) return;
+    const id = crypto.randomUUID();
+    const cleanAmount = Number(String(walkInAmount).replace(/[^0-9]/g, '')) || 0;
+    const newGuest = {
+      id,
+      slug: id.slice(0, 8),
+      guestName: name,
+      group: walkInGroup || 'Khách Bố Mẹ',
+      eventId: walkInEventId || data.events[0]?.id || '',
+      sent: true,
+      giftAmount: cleanAmount,
+      giftMethod: walkInMethod || 'cash',
+      giftNote: walkInNote.trim(),
+      isInvited: true
+    };
+    queueAutoSave(prev => ({ ...prev, links: [newGuest, ...(prev.links || [])] }));
+    setWalkInName('');
+    setWalkInAmount('');
+    setWalkInNote('');
+  };
+
+  // Update Gift Data on any row (including legacy RSVP rows)
+  const updateGuestGift = (row, patch) => {
+    queueAutoSave(prev => {
+      const links = [...(prev.links || [])];
+      const targetId = row.guestId || row.id;
+      const idx = links.findIndex(l => l.id === targetId);
+      if (idx !== -1) {
+        links[idx] = { ...links[idx], ...patch };
+      } else {
+        // Legacy RSVP without a link entry yet -> create link entry to store gift
+        const newId = targetId || crypto.randomUUID();
+        const safeSlug = 'g-' + String(newId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '-' + Math.floor(100 + Math.random() * 899);
+        links.push({
+          id: newId,
+          slug: safeSlug,
+          guestName: row.name || 'Khách mời',
+          group: row.group || 'Bạn bè',
+          eventId: row.eventIds?.[0] || prev.events?.[0]?.id || '',
+          sent: true,
+          giftAmount: Number(row.giftAmount || 0),
+          giftMethod: row.giftMethod || 'cash',
+          giftNote: row.giftNote || '',
+          ...patch
+        });
+      }
+      return { ...prev, links };
+    });
+  };
+
   const removeGuestLink = (id) => {
-    if (!confirm('Bạn có chắc muốn xóa link khách mời này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa khách mời này?')) return;
     queueAutoSave(prev => ({ ...prev, links: prev.links.filter(g => g.id !== id) }));
   };
 
@@ -328,13 +409,26 @@ export default function AdminPage() {
     return `≈ ${tables} bàn (${seatsPerTable} người/bàn)`;
   };
 
+  const formatVND = (amount) => {
+    if (hideMoney) return '•••,••• đ';
+    return Number(amount || 0).toLocaleString('vi-VN') + ' đ';
+  };
+
+  const togglePrivacy = () => {
+    setHideMoney(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') localStorage.setItem('wedding_hide_money', next ? '1' : '0');
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className={styles.adminLayout}>
         <aside className={styles.sidebar}>
           <div className={styles.sidebarLogo}>BOMIUX ADMIN</div>
           <div className={styles.navMenu}>
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className={`${styles.skeleton}`} style={{height: 40, marginBottom: 8}}></div>
             ))}
           </div>
@@ -383,6 +477,32 @@ export default function AdminPage() {
     (r.name.toLowerCase().includes(searchQuery.toLowerCase()) || (r.group && r.group.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
+  // Gift Registry Rows & Filtering
+  const giftRows = allRows.filter(r => {
+    const groupMatch = giftFilterGroup === 'all' || r.group === giftFilterGroup;
+    const eventMatch = giftFilterEvent === 'all' || (r.eventIds && r.eventIds.includes(giftFilterEvent));
+    const methodMatch =
+      giftFilterMethod === 'all' ? true :
+      giftFilterMethod === 'gifted' ? r.hasGift :
+      giftFilterMethod === 'ungifted' ? !r.hasGift :
+      (r.hasGift && r.giftMethod === giftFilterMethod);
+    const q = giftSearch.trim().toLowerCase();
+    const searchMatch = !q ||
+      r.name.toLowerCase().includes(q) ||
+      (r.group && r.group.toLowerCase().includes(q)) ||
+      (r.giftNote && r.giftNote.toLowerCase().includes(q));
+    return groupMatch && eventMatch && methodMatch && searchMatch;
+  });
+
+  // Gift Statistics
+  const giftedRows = allRows.filter(r => r.hasGift);
+  const totalGiftMoney = allRows.reduce((s, r) => s + Number(r.giftAmount || 0), 0);
+  const cashRows = allRows.filter(r => r.hasGift && (r.giftMethod || 'cash') === 'cash');
+  const totalCashMoney = cashRows.reduce((s, r) => s + Number(r.giftAmount || 0), 0);
+  const transferRows = allRows.filter(r => r.hasGift && r.giftMethod === 'transfer');
+  const totalTransferMoney = transferRows.reduce((s, r) => s + Number(r.giftAmount || 0), 0);
+  const goldRows = allRows.filter(r => r.hasGift && (r.giftMethod === 'gold' || (r.giftNote && /chỉ|cây|vàng|nhẫn|kiềng|lắc|dây/i.test(r.giftNote))));
+
   // Overall Stats
   const totalAttending = allRows.filter(r => r.attending === 'yes').reduce((s, r) => s + Number(r.count || 0), 0);
   const totalPending = allRows.filter(r => r.attending === 'pending').length;
@@ -394,7 +514,7 @@ export default function AdminPage() {
   const unsentLinksCount = totalLinksCount - sentLinksCount;
   const sentPercent = totalLinksCount > 0 ? Math.round((sentLinksCount / totalLinksCount) * 100) : 0;
 
-  // Compute dynamic modal rows so live edits/ticks inside modal reflect immediately
+  // Dynamic modal rows
   const modalScopedRows = guestModal
     ? allRows.filter(r => guestModal.scope === 'all' || (r.eventIds && r.eventIds.includes(guestModal.scope)))
     : [];
@@ -435,10 +555,21 @@ export default function AdminPage() {
       <aside className={styles.sidebar}>
         <div className={styles.sidebarLogo}>BOMIUX ADMIN</div>
         <div className={styles.navMenu}>
-          <button className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`} onClick={() => setActiveTab('dashboard')}><span style={{display: 'inline-flex', width: 20}}><Icon icon={LayoutDashboard} size={18} /></span> Tổng quan</button>
-          <button className={`${styles.navItem} ${activeTab === 'crm' ? styles.active : ''}`} onClick={() => setActiveTab('crm')}><span style={{display: 'inline-flex', width: 20}}><Icon icon={Users} size={18} /></span> Khách & RSVP</button>
-          <button className={`${styles.navItem} ${activeTab === 'content' ? styles.active : ''}`} onClick={() => setActiveTab('content')}><span style={{display: 'inline-flex', width: 20}}><Icon icon={PenTool} size={18} /></span> Nội dung thiệp</button>
-          <button className={`${styles.navItem} ${activeTab === 'gallery' ? styles.active : ''}`} onClick={() => setActiveTab('gallery')}><span style={{display: 'inline-flex', width: 20}}><Icon icon={ImageIcon} size={18} /></span> Ảnh Album</button>
+          <button className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`} onClick={() => setActiveTab('dashboard')}>
+            <span style={{display: 'inline-flex', width: 20}}><Icon icon={LayoutDashboard} size={18} /></span> Tổng quan
+          </button>
+          <button className={`${styles.navItem} ${activeTab === 'crm' ? styles.active : ''}`} onClick={() => setActiveTab('crm')}>
+            <span style={{display: 'inline-flex', width: 20}}><Icon icon={Users} size={18} /></span> Khách & RSVP
+          </button>
+          <button className={`${styles.navItem} ${activeTab === 'gifts' ? styles.active : ''}`} onClick={() => setActiveTab('gifts')}>
+            <span style={{display: 'inline-flex', width: 20}}>💰</span> Sổ Tiền Mừng
+          </button>
+          <button className={`${styles.navItem} ${activeTab === 'content' ? styles.active : ''}`} onClick={() => setActiveTab('content')}>
+            <span style={{display: 'inline-flex', width: 20}}><Icon icon={PenTool} size={18} /></span> Nội dung thiệp
+          </button>
+          <button className={`${styles.navItem} ${activeTab === 'gallery' ? styles.active : ''}`} onClick={() => setActiveTab('gallery')}>
+            <span style={{display: 'inline-flex', width: 20}}><Icon icon={ImageIcon} size={18} /></span> Ảnh Album
+          </button>
         </div>
         <div style={{marginTop: 'auto', padding: '16px'}}>
           <a href="/" target="_blank" className={styles.buttonSecondary} style={{display: 'block', textAlign: 'center', marginBottom: '8px', textDecoration: 'none'}}>Xem thiệp &rarr;</a>
@@ -468,21 +599,30 @@ export default function AdminPage() {
           <div>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>Tổng quan</h1>
-              <div className={styles.seatsSelector}>
-                <span>Quy chuẩn mâm cỗ:</span>
-                <select
-                  value={seatsPerTable}
-                  onChange={e => {
-                    const val = Number(e.target.value);
-                    setSeatsPerTable(val);
-                    if (typeof window !== 'undefined') localStorage.setItem('wedding_seats_per_table', String(val));
-                  }}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`${styles.privacyBtn} ${hideMoney ? styles.privacyBtnActive : ''}`}
+                  onClick={togglePrivacy}
                 >
-                  <option value={6}>6 người / mâm</option>
-                  <option value={8}>8 người / mâm</option>
-                  <option value={10}>10 người / mâm</option>
-                  <option value={12}>12 người / mâm</option>
-                </select>
+                  {hideMoney ? '🙈 Đang ẩn số tiền' : '👁️ Hiện số tiền'}
+                </button>
+                <div className={styles.seatsSelector}>
+                  <span>Quy chuẩn mâm cỗ:</span>
+                  <select
+                    value={seatsPerTable}
+                    onChange={e => {
+                      const val = Number(e.target.value);
+                      setSeatsPerTable(val);
+                      if (typeof window !== 'undefined') localStorage.setItem('wedding_seats_per_table', String(val));
+                    }}
+                  >
+                    <option value={6}>6 người / mâm</option>
+                    <option value={8}>8 người / mâm</option>
+                    <option value={10}>10 người / mâm</option>
+                    <option value={12}>12 người / mâm</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -518,22 +658,28 @@ export default function AdminPage() {
 
               <div 
                 className={`${styles.statCard} ${styles.clickableCard}`}
-                onClick={() => { setModalSearch(''); setGuestModal({ scope: 'all', tab: 'pending' }); }}
-                title="Bấm để xem danh sách khách chờ phản hồi"
+                onClick={() => setActiveTab('gifts')}
+                title="Bấm để mở Sổ Tiền Mừng chi tiết"
               >
-                <h3>{totalPending}</h3>
-                <p>Đang chờ phản hồi</p>
-                <span className={styles.cardHint}>👉 Bấm xem & copy link nhắc lịch</span>
+                <h3 style={{ fontSize: '1.75rem', color: '#2e7d32' }}>{formatVND(totalGiftMoney)}</h3>
+                <p>Tổng tiền mừng ({giftedRows.length} phong bì)</p>
+                <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                  💵 Mặt: {formatVND(totalCashMoney)} • 🏦 CK: {formatVND(totalTransferMoney)}
+                </span>
+                <span className={styles.cardHint}>👉 Mở Sổ Tiền Mừng & nhập nhanh</span>
               </div>
 
               <div 
                 className={`${styles.statCard} ${styles.clickableCard}`}
-                onClick={() => { setModalSearch(''); setGuestModal({ scope: 'all', tab: 'no' }); }}
-                title="Bấm để xem danh sách khách báo vắng"
+                onClick={() => { setModalSearch(''); setGuestModal({ scope: 'all', tab: 'pending' }); }}
+                title="Bấm để xem danh sách khách chờ phản hồi"
               >
-                <h3>{totalDeclined}</h3>
-                <p>Báo vắng</p>
-                <span className={styles.cardHint}>👉 Bấm xem chi tiết tên khách</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h3>{totalPending}</h3>
+                  <span style={{ fontSize: '0.85rem', color: '#999' }}>Vắng: {totalDeclined}</span>
+                </div>
+                <p>Đang chờ phản hồi</p>
+                <span className={styles.cardHint}>👉 Bấm xem & copy link nhắc lịch</span>
               </div>
             </div>
             
@@ -552,6 +698,8 @@ export default function AdminPage() {
                   const evtSentCount = evtLinkRows.filter(r => r.sent).length;
                   const evtAttending = attendingRows.reduce((s, r) => s + Number(r.count || 0), 0);
                   const evtSentPct = evtLinkRows.length > 0 ? Math.round((evtSentCount / evtLinkRows.length) * 100) : 0;
+                  const evtGiftMoney = evtRows.reduce((s, r) => s + Number(r.giftAmount || 0), 0);
+                  const evtGiftCount = evtRows.filter(r => r.hasGift).length;
 
                   return (
                     <div 
@@ -588,6 +736,14 @@ export default function AdminPage() {
                       >
                         <span>✕ Báo vắng:</span> 
                         <strong>{declinedRows.length} khách</strong>
+                      </div>
+
+                      <div
+                        style={{display: 'flex', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, color: '#2e7d32', fontSize: '0.88rem', background: '#f4fbf5', marginTop: 2}}
+                        onClick={e => { e.stopPropagation(); setGiftFilterEvent(event.id); setActiveTab('gifts'); }}
+                      >
+                        <span>💰 Tiền mừng ({evtGiftCount} khách):</span> 
+                        <strong>{formatVND(evtGiftMoney)}</strong>
                       </div>
 
                       <div
@@ -632,7 +788,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* POPUP MODAL NÂNG CẤP: CÓ TAB CHUYỂN ĐỔI, TÌM KIẾM & COPY LỜI MỜI TẠI CHỖ */}
+        {/* POPUP MODAL HIỂN THỊ CHI TIẾT KHÁCH */}
         {guestModal && (
           <div className={styles.modalBackdrop} onClick={() => setGuestModal(null)}>
             <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
@@ -766,6 +922,377 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* TAB MỚI: SỔ TIỀN MỪNG & QUÀ CƯỚI (GÓI A) */}
+        {activeTab === 'gifts' && (
+          <div>
+            <div className={styles.header}>
+              <div>
+                <h1 className={styles.pageTitle}>💰 Sổ Tiền Mừng & Quà Cưới</h1>
+                <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+                  Nhập số tiền mừng 1 chạm, phân loại Tiền mặt / Chuyển khoản / Vàng và tự động lưu ngay lập tức.
+                </p>
+              </div>
+              <div className={styles.headerActions}>
+                <button
+                  type="button"
+                  className={`${styles.privacyBtn} ${hideMoney ? styles.privacyBtnActive : ''}`}
+                  onClick={togglePrivacy}
+                  title="Ẩn/Hiện số tiền để tránh người bên cạnh nhìn thấy"
+                >
+                  {hideMoney ? '🙈 Đang ẩn số tiền (Bấm để hiện)' : '👁️ Ẩn số tiền'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.buttonSecondary}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => {
+                    const url = URL.createObjectURL(new Blob([giftCsvFor(giftRows)], { type: 'text/csv;charset=utf-8' }));
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'so-tien-mung-dam-cuoi.csv';
+                    a.click();
+                  }}
+                >
+                  <Icon icon={Download} size={16} /> Xuất Sổ Tiền Mừng ({giftRows.length})
+                </button>
+              </div>
+            </div>
+
+            {/* 4 Thẻ Tổng thu Tiền mừng */}
+            <div className={styles.statsGrid}>
+              <div
+                className={`${styles.statCard} ${styles.highlight} ${styles.clickableCard}`}
+                onClick={() => setGiftFilterMethod(giftFilterMethod === 'gifted' ? 'all' : 'gifted')}
+              >
+                <h3 style={{ fontSize: '1.85rem', color: '#2e7d32' }}>{formatVND(totalGiftMoney)}</h3>
+                <p>Tổng tiền mừng thu được</p>
+                <span style={{ fontSize: '0.82rem', color: '#666' }}>
+                  Đã ghi nhận: <strong>{giftedRows.length} / {allRows.length}</strong> khách
+                </span>
+                <span className={styles.cardHint}>👉 Bấm để lọc những khách đã mừng</span>
+              </div>
+
+              <div
+                className={`${styles.statCard} ${styles.clickableCard}`}
+                onClick={() => setGiftFilterMethod(giftFilterMethod === 'cash' ? 'all' : 'cash')}
+              >
+                <h3 style={{ fontSize: '1.75rem', color: '#2e7d32' }}>{formatVND(totalCashMoney)}</h3>
+                <p>💵 Tiền mặt (Phong bì)</p>
+                <span style={{ fontSize: '0.82rem', color: '#666' }}>
+                  Số lượng: <strong>{cashRows.length} phong bì</strong>
+                </span>
+                <span className={styles.cardHint}>👉 Bấm để đối chiếu tiền mặt trong thùng</span>
+              </div>
+
+              <div
+                className={`${styles.statCard} ${styles.clickableCard}`}
+                onClick={() => setGiftFilterMethod(giftFilterMethod === 'transfer' ? 'all' : 'transfer')}
+              >
+                <h3 style={{ fontSize: '1.75rem', color: '#1565c0' }}>{formatVND(totalTransferMoney)}</h3>
+                <p>🏦 Chuyển khoản (QR Bank)</p>
+                <span style={{ fontSize: '0.82rem', color: '#666' }}>
+                  Số lượng: <strong>{transferRows.length} lượt CK</strong>
+                </span>
+                <span className={styles.cardHint}>👉 Bấm để đối chiếu sao kê ngân hàng</span>
+              </div>
+
+              <div
+                className={`${styles.statCard} ${styles.clickableCard}`}
+                onClick={() => setGiftFilterMethod(giftFilterMethod === 'gold' ? 'all' : 'gold')}
+              >
+                <h3 style={{ fontSize: '1.75rem', color: '#f57f17' }}>{goldRows.length} phần quà</h3>
+                <p>💍 Vàng & Quà Hiện Vật</p>
+                <span style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {goldRows.length > 0 ? goldRows.map(r => `${r.name} (${r.giftNote || 'Vàng'})`).slice(0, 2).join(', ') : 'Chưa ghi nhận quà vàng'}
+                </span>
+                <span className={styles.cardHint}>👉 Bấm để xem danh sách mừng vàng/quà</span>
+              </div>
+            </div>
+
+            {/* Thống kê tiền mừng theo Nhóm & Tiệc */}
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>
+                <span>Thống kê Tiền mừng theo Nhóm khách & Tiệc</span>
+                {(giftFilterGroup !== 'all' || giftFilterEvent !== 'all' || giftFilterMethod !== 'all') && (
+                  <button
+                    type="button"
+                    className={styles.buttonSecondary}
+                    style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                    onClick={() => { setGiftFilterGroup('all'); setGiftFilterEvent('all'); setGiftFilterMethod('all'); }}
+                  >
+                    ✕ Xóa bộ lọc đang chọn
+                  </button>
+                )}
+              </h2>
+              <div className={styles.giftMiniGrid}>
+                {availableGroups.map(grp => {
+                  const grpRows = allRows.filter(r => r.group === grp);
+                  if (!grpRows.length) return null;
+                  const grpGifted = grpRows.filter(r => r.hasGift).length;
+                  const grpSum = grpRows.reduce((s, r) => s + Number(r.giftAmount || 0), 0);
+                  const active = giftFilterGroup === grp;
+                  return (
+                    <div
+                      key={grp}
+                      className={`${styles.giftMiniCard} ${active ? styles.giftMiniCardActive : ''}`}
+                      onClick={() => setGiftFilterGroup(active ? 'all' : grp)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <strong style={{ fontSize: '0.92rem', color: '#333' }}>{grp}</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#777' }}>{grpGifted}/{grpRows.length} khách</span>
+                      </div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2e7d32' }}>
+                        {formatVND(grpSum)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Thêm nhanh phong bì khách phát sinh ngoài danh sách Link */}
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>
+                <span>+ Thêm nhanh phong bì phát sinh (Khách của Bố Mẹ / Khách ngoài danh sách Link)</span>
+                <span style={{ fontSize: '0.8rem', color: '#2e7d32', fontWeight: 500 }}>✓ Tự động lưu ngay</span>
+              </h2>
+              <form onSubmit={addWalkInGift}>
+                <div className={styles.formGrid} style={{ gridTemplateColumns: '1.6fr 1fr 1fr 1.2fr 1fr 1.4fr auto', gap: 10, alignItems: 'start' }}>
+                  <div>
+                    <input
+                      className={styles.input}
+                      style={{ padding: '9px 12px', fontSize: '0.9rem' }}
+                      placeholder="Tên người mừng (VD: Bác Hùng bạn Bố) *"
+                      value={walkInName}
+                      onChange={e => setWalkInName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <select className={styles.select} style={{ padding: '9px 10px', fontSize: '0.9rem' }} value={walkInGroup} onChange={e => setWalkInGroup(e.target.value)}>
+                      {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <select className={styles.select} style={{ padding: '9px 10px', fontSize: '0.9rem' }} value={walkInEventId} onChange={e => setWalkInEventId(e.target.value)}>
+                      {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      step="10000"
+                      min="0"
+                      className={styles.input}
+                      style={{ padding: '9px 12px', fontSize: '0.9rem', fontWeight: 700, color: '#2e7d32' }}
+                      placeholder="Số tiền (VNĐ)"
+                      value={walkInAmount}
+                      onChange={e => setWalkInAmount(e.target.value)}
+                    />
+                    <div className={styles.presetGroup}>
+                      {QUICK_AMOUNTS.map(p => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          className={`${styles.presetChip} ${Number(walkInAmount) === p.value ? styles.presetChipActive : ''}`}
+                          onClick={() => setWalkInAmount(String(p.value))}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <select className={styles.select} style={{ padding: '9px 10px', fontSize: '0.9rem' }} value={walkInMethod} onChange={e => setWalkInMethod(e.target.value)}>
+                      <option value="cash">💵 Tiền mặt</option>
+                      <option value="transfer">🏦 Chuyển khoản</option>
+                      <option value="gold">💍 Vàng / Quà</option>
+                    </select>
+                  </div>
+                  <div>
+                    <input
+                      className={styles.input}
+                      style={{ padding: '9px 12px', fontSize: '0.9rem' }}
+                      placeholder="Ghi chú (VD: 1 chỉ vàng / Gửi hộ)"
+                      value={walkInNote}
+                      onChange={e => setWalkInNote(e.target.value)}
+                    />
+                  </div>
+                  <button type="submit" className={styles.buttonPrimary} style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
+                    + Lưu phong bì
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Bảng nhập và tra cứu Sổ Tiền Mừng */}
+            <div className={styles.card}>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <input
+                  className={styles.input}
+                  style={{ flex: '1 1 220px' }}
+                  placeholder="🔍 Tìm tên khách, nhóm hoặc ghi chú quà..."
+                  value={giftSearch}
+                  onChange={e => setGiftSearch(e.target.value)}
+                />
+                <select className={styles.select} style={{ width: '165px' }} value={giftFilterGroup} onChange={e => setGiftFilterGroup(e.target.value)}>
+                  <option value="all">Tất cả nhóm</option>
+                  {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <select className={styles.select} style={{ width: '165px' }} value={giftFilterEvent} onChange={e => setGiftFilterEvent(e.target.value)}>
+                  <option value="all">Tất cả tiệc</option>
+                  {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+                <select className={styles.select} style={{ width: '185px' }} value={giftFilterMethod} onChange={e => setGiftFilterMethod(e.target.value)}>
+                  <option value="all">Mọi trạng thái mừng</option>
+                  <option value="gifted">✓ Đã mừng ({giftedRows.length})</option>
+                  <option value="ungifted">⏳ Chưa ghi nhận ({allRows.length - giftedRows.length})</option>
+                  <option value="cash">💵 Tiền mặt ({cashRows.length})</option>
+                  <option value="transfer">🏦 Chuyển khoản ({transferRows.length})</option>
+                  <option value="gold">💍 Vàng / Hiện vật ({goldRows.length})</option>
+                </select>
+              </div>
+
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Khách mời & Nhóm</th>
+                      <th>Số tiền mừng (VNĐ) — Bấm chọn nhanh 1 chạm</th>
+                      <th>Hình thức mừng</th>
+                      <th>Ghi chú trả lễ / Quà hiện vật</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {giftRows.map((row, i) => {
+                      const amt = Number(row.giftAmount || 0);
+                      const methodClass =
+                        row.giftMethod === 'transfer' ? styles.methodTransfer :
+                        row.giftMethod === 'gold' ? styles.methodGold :
+                        styles.methodCash;
+
+                      return (
+                        <tr key={row.guestId || row.id || i} style={{ background: row.hasGift ? '#fafdf9' : undefined }}>
+                          <td style={{ minWidth: 190 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                              <strong>{row.name}</strong>
+                              {row.group && <span className={styles.groupBadge}>{row.group}</span>}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#777', marginTop: 3 }}>
+                              {row.location} •{' '}
+                              {row.attending === 'yes' ? (
+                                <span style={{ color: '#2e7d32', fontWeight: 600 }}>Đi {row.count || 1} người</span>
+                              ) : row.attending === 'no' ? (
+                                <span style={{ color: '#c62828' }}>Báo vắng</span>
+                              ) : (
+                                <span>Chờ phản hồi</span>
+                              )}
+                            </div>
+                          </td>
+
+                          <td style={{ minWidth: 310 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {hideMoney ? (
+                                <span style={{ fontWeight: 700, color: amt > 0 ? '#2e7d32' : '#999', fontSize: '0.95rem', minWidth: 130 }}>
+                                  {amt > 0 ? '•••,••• đ' : 'Chưa nhập'}
+                                </span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  step="50000"
+                                  min="0"
+                                  className={styles.moneyInput}
+                                  placeholder="0 đ"
+                                  value={amt > 0 ? amt : ''}
+                                  onChange={e => {
+                                    const val = Math.max(0, Number(e.target.value) || 0);
+                                    updateGuestGift(row, { giftAmount: val });
+                                  }}
+                                />
+                              )}
+                              {!hideMoney && amt > 0 && (
+                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2e7d32', whiteSpace: 'nowrap' }}>
+                                  = {amt.toLocaleString('vi-VN')} đ
+                                </span>
+                              )}
+                            </div>
+                            <div className={styles.presetGroup}>
+                              {QUICK_AMOUNTS.map(preset => (
+                                <button
+                                  key={preset.value}
+                                  type="button"
+                                  className={`${styles.presetChip} ${amt === preset.value ? styles.presetChipActive : ''}`}
+                                  onClick={() => updateGuestGift(row, { giftAmount: preset.value })}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                              {amt > 0 && (
+                                <button
+                                  type="button"
+                                  className={styles.presetChipClear}
+                                  title="Xóa số tiền về 0"
+                                  onClick={() => updateGuestGift(row, { giftAmount: 0 })}
+                                >
+                                  ✕ 0đ
+                                </button>
+                              )}
+                            </div>
+                          </td>
+
+                          <td style={{ minWidth: 150 }}>
+                            <select
+                              className={`${styles.methodSelect} ${row.hasGift ? methodClass : ''}`}
+                              value={row.giftMethod || 'cash'}
+                              onChange={e => updateGuestGift(row, { giftMethod: e.target.value })}
+                            >
+                              <option value="cash">💵 Phong bì (Mặt)</option>
+                              <option value="transfer">🏦 Chuyển khoản</option>
+                              <option value="gold">💍 Vàng / Hiện vật</option>
+                            </select>
+                          </td>
+
+                          <td style={{ minWidth: 220 }}>
+                            <input
+                              type="text"
+                              className={styles.giftNoteInput}
+                              placeholder="VD: 1 chỉ vàng / Trước mình mừng 1M..."
+                              value={row.giftNote || ''}
+                              onChange={e => updateGuestGift(row, { giftNote: e.target.value })}
+                            />
+                          </td>
+
+                          <td>
+                            {row.guestId && (
+                              <button
+                                type="button"
+                                title="Xóa khách này"
+                                className={`${styles.buttonSecondary} ${styles.buttonDanger}`}
+                                style={{ padding: '6px 10px' }}
+                                onClick={() => removeGuestLink(row.guestId)}
+                              >
+                                <Icon icon={Trash2} size={14} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!giftRows.length && (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: 'center', color: '#888', padding: '24px' }}>
+                          Không tìm thấy khách mời phù hợp với bộ lọc.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'crm' && (
           <div>
             <div className={styles.header}>
@@ -876,7 +1403,7 @@ export default function AdminPage() {
                       <th style={{textAlign: 'center'}}>Đã gửi link?</th>
                       <th>Gửi Thiệp Nhanh</th>
                       <th>Phản hồi</th>
-                      <th>Chi tiết RSVP</th>
+                      <th>Chi tiết RSVP & Tiền mừng</th>
                       <th>Thao tác</th>
                     </tr>
                   </thead>
@@ -993,13 +1520,20 @@ export default function AdminPage() {
                           </td>
 
                           <td>
-                            {row.attending !== 'pending' && (
-                              <div style={{fontSize: '0.85rem'}}>
-                                <div>{row.location ? row.location.split(' + ').map((loc, idx) => <span key={idx} className={styles.locationBadge}>{loc}</span>) : ''}</div>
-                                {row.attending === 'yes' && <div style={{marginTop: '4px'}}><strong>Đi:</strong> {row.count} người</div>}
-                                {row.message && <div style={{marginTop: '4px', color: '#666', fontStyle: 'italic'}}>&quot;{row.message}&quot;</div>}
-                              </div>
-                            )}
+                            <div style={{fontSize: '0.85rem'}}>
+                              {row.attending !== 'pending' && (
+                                <>
+                                  <div>{row.location ? row.location.split(' + ').map((loc, idx) => <span key={idx} className={styles.locationBadge}>{loc}</span>) : ''}</div>
+                                  {row.attending === 'yes' && <div style={{marginTop: '4px'}}><strong>Đi:</strong> {row.count} người</div>}
+                                  {row.message && <div style={{marginTop: '4px', color: '#666', fontStyle: 'italic'}}>&quot;{row.message}&quot;</div>}
+                                </>
+                              )}
+                              {row.hasGift && (
+                                <div style={{ marginTop: 4, color: '#2e7d32', fontWeight: 600 }}>
+                                  💰 Mừng: {row.giftAmount > 0 ? formatVND(row.giftAmount) : ''} {row.giftNote ? `(${row.giftNote})` : ''}
+                                </div>
+                              )}
+                            </div>
                           </td>
 
                           <td>
