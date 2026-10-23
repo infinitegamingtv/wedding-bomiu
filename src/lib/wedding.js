@@ -36,13 +36,26 @@ export function guestRows(data) {
     const eventIdStr = response?.eventId || guest.eventId || events[0]?.id || '';
     const eventIds = typeof eventIdStr === 'string' ? eventIdStr.split(',').filter(Boolean) : [];
     const location = eventIds.map(id => events.find(e => e.id === id)?.name).filter(Boolean).join(' + ') || response?.location || 'Chưa rõ';
-    return { ...response, guestId: guest.id, name: response?.name || guest.guestName, group: guest.group || '', sent: Boolean(guest.sent), eventIds, location, attending: response?.attending || 'pending', count: response?.count || 0 };
+    return {
+      ...response,
+      guestId: guest.id,
+      slug: guest.slug,
+      guestNameOrig: guest.guestName,
+      guestEventId: guest.eventId || '',
+      name: response?.name || guest.guestName,
+      group: guest.group || '',
+      sent: Boolean(guest.sent),
+      eventIds,
+      location,
+      attending: response?.attending || 'pending',
+      count: response?.count || 0
+    };
   });
   for (const r of responses) {
     if (linked.has(r.id)) continue;
     const eventIds = typeof r.eventId === 'string' ? r.eventId.split(',').filter(Boolean) : [];
     const location = eventIds.map(id => events.find(e => e.id === id)?.name).filter(Boolean).join(' + ') || r.location || 'Chưa rõ';
-    rows.push({ ...r, eventIds, location, group: '', legacy: !r.guestId });
+    rows.push({ ...r, eventIds, location, group: '', sent: true, legacy: !r.guestId });
   }
   return rows;
 }
@@ -53,5 +66,17 @@ export function csvFor(rows) {
     if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
     return '"' + text.replaceAll('"', '""') + '"';
   };
-  return '\uFEFF' + [['Khách mời', 'Tiệc', 'Trạng thái', 'Số người', 'Lời chúc'], ...rows.map(r => [r.name, r.location, r.attending === 'yes' ? 'Tham dự' : r.attending === 'no' ? 'Không tham dự' : 'Chưa phản hồi', r.count, r.message || ''])].map(row => row.map(cell).join(',')).join('\r\n');
+  return '\uFEFF' + [
+    ['Khách mời', 'Nhóm', 'Tiệc', 'Đã gửi thiệp', 'Trạng thái', 'Số người', 'Lời chúc', 'Mã Link'],
+    ...rows.map(r => [
+      r.name,
+      r.group || 'Chưa phân nhóm',
+      r.location,
+      r.sent ? 'Đã gửi' : 'Chưa gửi',
+      r.attending === 'yes' ? 'Tham dự' : r.attending === 'no' ? 'Không tham dự' : 'Chưa phản hồi',
+      r.count,
+      r.message || '',
+      r.slug ? `/invite/${r.slug}` : 'Thiệp chung'
+    ])
+  ].map(row => row.map(cell).join(',')).join('\r\n');
 }

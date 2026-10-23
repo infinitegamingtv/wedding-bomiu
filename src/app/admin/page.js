@@ -1,12 +1,15 @@
-﻿'use client';
-import { useState, useEffect, useMemo } from 'react';
+'use client';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './admin.module.css';
 import EventEditor from '@/components/EventEditor';
 import { guestRows, csvFor } from '@/lib/wedding';
-import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle } from 'lucide';
+import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle, Copy, Check } from 'lucide';
 import { MorphIcon } from 'morphicons/react';
 
 const Icon = ({ icon, size = 18, ...props }) => <MorphIcon icon={icon} size={size} {...props} />;
+
+const DEFAULT_GROUPS = ['Bạn bè', 'Nhà Trai', 'Nhà Gái', 'Đồng nghiệp', 'Họ hàng', 'Khách VIP'];
+const DEFAULT_TEMPLATE = 'Thân mời {name} tới dự bữa tiệc chung vui cùng gia đình chúng mình nhé! Xem thiệp mời tại: {link}';
 
 export default function AdminPage() {
   const [data, setData] = useState(null);
@@ -19,77 +22,186 @@ export default function AdminPage() {
   const [notice, setNotice] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [newImageUrl, setNewImageUrl] = useState('');
-  
+
+  // CRM & Filter States
   const [bulkGuestNames, setBulkGuestNames] = useState('');
   const [bulkEventId, setBulkEventId] = useState('');
   const [bulkGroup, setBulkGroup] = useState('Bạn bè');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterGroup, setFilterGroup] = useState('all');
   const [filterEvent, setFilterEvent] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSent, setFilterSent] = useState('all');
+
+  // Table Estimation & Share Template
+  const [seatsPerTable, setSeatsPerTable] = useState(10);
+  const [inviteTemplate, setInviteTemplate] = useState(DEFAULT_TEMPLATE);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [copiedKey, setCopiedKey] = useState('');
+
+  // Modal State: { scope: 'all' | eventId, tab: 'yes' | 'pending' | 'no' | 'unsent' | 'sent' }
   const [guestModal, setGuestModal] = useState(null);
+  const [modalSearch, setModalSearch] = useState('');
 
-      useEffect(() => {
-      let active = true;
-      fetch('/api/auth').then(res => res.json()).then(async session => {
-        if (!session.authenticated) {
-            if (active) { setAuth(false); setLoading(false); }
-            return;
+  // Inline Edit State
+  const [editingGuestId, setEditingGuestId] = useState(null);
+  const [editForm, setEditForm] = useState({ guestName: '', group: '', eventId: '' });
+
+  // Auto-Save Queue Refs & State
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const dataRef = useRef(null);
+  const inFlightRef = useRef(false);
+  const pendingSaveRef = useRef(false);
+  const debounceTimerRef = useRef(null);
+  const savedBadgeTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSeats = localStorage.getItem('wedding_seats_per_table');
+      if (savedSeats && [6, 8, 10, 12].includes(Number(savedSeats))) {
+        setSeatsPerTable(Number(savedSeats));
+      }
+      const savedTpl = localStorage.getItem('wedding_invite_template');
+      if (savedTpl) setInviteTemplate(savedTpl);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth').then(res => res.json()).then(async session => {
+      if (!session.authenticated) {
+        if (active) { setAuth(false); setLoading(false); }
+        return;
+      }
+      const dataRes = await fetch('/api/data');
+      if (!dataRes.ok) throw new Error('Không tải được dữ liệu.');
+      const value = await dataRes.json();
+      if (active) {
+        setData(value);
+        dataRef.current = value;
+        setOriginalData(JSON.stringify(value));
+        if (value.texts?.inviteShareTemplate) {
+          setInviteTemplate(value.texts.inviteShareTemplate);
         }
-        const dataRes = await fetch('/api/data');
-        if (!dataRes.ok) throw new Error('Không tải được dữ liệu.');
-        const value = await dataRes.json();
-        if (active) {
-          setData(value);
-          setOriginalData(JSON.stringify(value));
-          setAuth(true);
-          setLoading(false);
-        }
-      }).catch(err => {
-        if (active) { setNotice(err.message); setLoading(false); }
+        setAuth(true);
+        setLoading(false);
+      }
+    }).catch(err => {
+      if (active) { setNotice(err.message); setLoading(false); }
+    });
+    return () => { active = false; };
+  }, []);
+
+  // Synchronize dataRef whenever data changes
+  useEffect(() => {
+    if (data) dataRef.current = data;
+  }, [data]);
+
+  const flushAutoSave = async () => {
+    if (!dataRef.current) return;
+    if (inFlightRef.current) {
+      pendingSaveRef.current = true;
+      return;
+    }
+    inFlightRef.current = true;
+    pendingSaveRef.current = false;
+    setAutoSaveStatus('saving');
+
+    try {
+      const payload = { ...dataRef.current };
+      delete payload.rsvps;
+      const response = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      return () => { active = false; };
-    }, []);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Lỗi tự động lưu');
 
-  
-    const handleLogin = async e => {
-      e.preventDefault(); setLoginBusy(true); setNotice('');
-      try {
-        const res = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Không đăng nhập được.');
-        const dataResponse = await fetch('/api/data');
-        if (!dataResponse.ok) throw new Error('Không tải được dữ liệu.');
-        const fetchedData = await dataResponse.json();
-        setData(fetchedData); setOriginalData(JSON.stringify(fetchedData)); setPassword(''); setAuth(true); setLoading(false);
-      } catch (err) { setNotice(err.message); }
-      finally { setLoginBusy(false); }
-    };
+      // Merge new server revision while keeping any newer local edits if pendingSaveRef is true
+      const nextMerged = pendingSaveRef.current
+        ? { ...dataRef.current, revision: result.revision, rsvps: result.rsvps }
+        : result;
 
-    const logout = async () => {
-      try {
-        const res = await fetch('/api/auth', { method: 'DELETE' });
-        if (!res.ok) throw new Error('Chưa đăng xuất được.');
-        setAuth(false); setData(null); setNotice('');
-      } catch (err) { setNotice(err.message); }
-    };
+      dataRef.current = nextMerged;
+      setData(nextMerged);
 
+      if (!pendingSaveRef.current) {
+        setOriginalData(JSON.stringify(nextMerged));
+        setAutoSaveStatus('saved');
+        if (savedBadgeTimerRef.current) clearTimeout(savedBadgeTimerRef.current);
+        savedBadgeTimerRef.current = setTimeout(() => setAutoSaveStatus('idle'), 2500);
+      }
+    } catch (err) {
+      console.error('Auto-save error:', err);
+      setAutoSaveStatus('error');
+    } finally {
+      inFlightRef.current = false;
+      if (pendingSaveRef.current) {
+        flushAutoSave();
+      }
+    }
+  };
+
+  const queueAutoSave = (updater) => {
+    setData(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      dataRef.current = next;
+      return next;
+    });
+    setAutoSaveStatus('saving');
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      flushAutoSave();
+    }, 350);
+  };
+
+  const handleLogin = async e => {
+    e.preventDefault(); setLoginBusy(true); setNotice('');
+    try {
+      const res = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Không đăng nhập được.');
+      const dataResponse = await fetch('/api/data');
+      if (!dataResponse.ok) throw new Error('Không tải được dữ liệu.');
+      const fetchedData = await dataResponse.json();
+      setData(fetchedData);
+      dataRef.current = fetchedData;
+      setOriginalData(JSON.stringify(fetchedData));
+      setPassword('');
+      setAuth(true);
+      setLoading(false);
+    } catch (err) { setNotice(err.message); }
+    finally { setLoginBusy(false); }
+  };
+
+  const logout = async () => {
+    try {
+      const res = await fetch('/api/auth', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Chưa đăng xuất được.');
+      setAuth(false); setData(null); setNotice('');
+    } catch (err) { setNotice(err.message); }
+  };
 
   const isDirty = useMemo(() => {
     if (!data || !originalData) return false;
-    const current = { ...data, rsvps: undefined };
-    const original = { ...JSON.parse(originalData), rsvps: undefined };
+    const current = { ...data, rsvps: undefined, revision: undefined };
+    const original = { ...JSON.parse(originalData), rsvps: undefined, revision: undefined };
     return JSON.stringify(current) !== JSON.stringify(original);
   }, [data, originalData]);
 
   const handlePublish = async () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     setSaving(true); setNotice('');
     try {
-      const payload = { ...data }; delete payload.rsvps;
+      const payload = { ...dataRef.current }; delete payload.rsvps;
       const response = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Lỗi lưu dữ liệu.');
-      setData(result); setOriginalData(JSON.stringify(result));
+      setData(result);
+      dataRef.current = result;
+      setOriginalData(JSON.stringify(result));
+      setAutoSaveStatus('saved');
       setNotice('Đã lưu thành công!');
       setTimeout(() => setNotice(''), 3000);
     } catch (err) { setNotice(err.message); }
@@ -104,19 +216,103 @@ export default function AdminPage() {
     if (!names.length) return;
     const newLinks = names.map(name => {
       const id = crypto.randomUUID();
-      return { id, slug: id.slice(0, 8), guestName: name, group: bulkGroup || 'Bạn bè', eventId: bulkEventId || data.events[0]?.id || '', isInvited: true };
+      return {
+        id,
+        slug: id.slice(0, 8),
+        guestName: name,
+        group: bulkGroup || 'Bạn bè',
+        eventId: bulkEventId || data.events[0]?.id || '',
+        sent: false,
+        isInvited: true
+      };
     });
-    setData(prev => ({ ...prev, links: [...(prev.links || []), ...newLinks] }));
+    queueAutoSave(prev => ({ ...prev, links: [...(prev.links || []), ...newLinks] }));
     setBulkGuestNames('');
   };
-  const removeGuestLink = (id) => setData(prev => ({ ...prev, links: prev.links.filter(g => g.id !== id) }));
-  const toggleGuestSent = (guestId) => {
-    setData(prev => ({
+
+  const removeGuestLink = (id) => {
+    if (!confirm('Bạn có chắc muốn xóa link khách mời này?')) return;
+    queueAutoSave(prev => ({ ...prev, links: prev.links.filter(g => g.id !== id) }));
+  };
+
+  const toggleGuestSent = (guestId, forceValue = undefined) => {
+    queueAutoSave(prev => ({
       ...prev,
-      links: (prev.links || []).map(link => link.id === guestId ? { ...link, sent: !link.sent } : link)
+      links: (prev.links || []).map(link =>
+        link.id === guestId
+          ? { ...link, sent: forceValue !== undefined ? forceValue : !link.sent }
+          : link
+      )
     }));
   };
-  
+
+  const startEditGuest = (row) => {
+    const linkObj = (data.links || []).find(l => l.id === row.guestId);
+    if (!linkObj) return;
+    setEditingGuestId(row.guestId);
+    setEditForm({
+      guestName: linkObj.guestName || row.name || '',
+      group: linkObj.group || 'Bạn bè',
+      eventId: linkObj.eventId || ''
+    });
+  };
+
+  const saveEditGuest = (guestId) => {
+    const trimmedName = editForm.guestName.trim();
+    if (!trimmedName) return;
+    queueAutoSave(prev => ({
+      ...prev,
+      links: (prev.links || []).map(link =>
+        link.id === guestId
+          ? { ...link, guestName: trimmedName, group: editForm.group.trim(), eventId: editForm.eventId }
+          : link
+      )
+    }));
+    setEditingGuestId(null);
+  };
+
+  const getGuestUrl = (row) => {
+    const slug = row.slug || data?.links?.find(l => l.id === row.guestId)?.slug;
+    if (!slug) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/invite/${slug}`;
+  };
+
+  const copyInviteMessage = (row) => {
+    const url = getGuestUrl(row);
+    if (!url) return;
+    const msg = (inviteTemplate || DEFAULT_TEMPLATE)
+      .replaceAll('{name}', row.name)
+      .replaceAll('{link}', url);
+    navigator.clipboard.writeText(msg);
+    setCopiedKey(`msg-${row.guestId}`);
+    setTimeout(() => setCopiedKey(''), 2000);
+    if (!row.sent && row.guestId) {
+      toggleGuestSent(row.guestId, true);
+    }
+  };
+
+  const copyRawLink = (row) => {
+    const url = getGuestUrl(row);
+    if (!url) return;
+    navigator.clipboard.writeText(url);
+    setCopiedKey(`link-${row.guestId}`);
+    setTimeout(() => setCopiedKey(''), 2000);
+  };
+
+  const shareZalo = (row) => {
+    const url = getGuestUrl(row);
+    if (!url) return;
+    const msg = (inviteTemplate || DEFAULT_TEMPLATE)
+      .replaceAll('{name}', row.name)
+      .replaceAll('{link}', url);
+    navigator.clipboard.writeText(msg);
+    if (!row.sent && row.guestId) {
+      toggleGuestSent(row.guestId, true);
+    }
+    window.open(`https://zalo.me/share?url=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer');
+  };
+
   const deleteRsvp = async id => {
     if (!confirm('Xóa phản hồi này?')) return;
     try {
@@ -124,6 +320,12 @@ export default function AdminPage() {
       if (!res.ok) throw new Error('Lỗi xóa');
       setData(prev => ({ ...prev, rsvps: prev.rsvps.filter(r => r.id !== id) }));
     } catch (err) { alert(err.message); }
+  };
+
+  const formatTables = (peopleCount) => {
+    if (!peopleCount || peopleCount <= 0) return '0 bàn';
+    const tables = (peopleCount / seatsPerTable).toFixed(1).replace(/\.0$/, '');
+    return `≈ ${tables} bàn (${seatsPerTable} người/bàn)`;
   };
 
   if (loading) {
@@ -140,45 +342,93 @@ export default function AdminPage() {
         <main className={styles.mainContent} aria-busy="true">
            <div className={`${styles.skeleton} ${styles.skeletonTitle}`}></div>
            <div className={styles.statsGrid}>
-              {[1, 2, 3].map(i => <div key={i} className={`${styles.skeleton} ${styles.skeletonCard}`}></div>)}
+              {[1, 2, 3, 4].map(i => <div key={i} className={`${styles.skeleton} ${styles.skeletonCard}`}></div>)}
            </div>
            <div className={`${styles.skeleton} ${styles.skeletonTable}`}></div>
         </main>
       </div>
     );
   }
-  if (!auth) {
-      return (
-        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5'}}>
-          <form onSubmit={handleLogin} style={{background: '#fff', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxWidth: '400px', width: '100%', textAlign: 'center'}}>
-            <h2 style={{marginBottom: '20px', color: '#333'}}>Đăng nhập Quản trị</h2>
-            <div style={{marginBottom: '15px', textAlign: 'left'}}>
-              <label style={{display: 'block', marginBottom: '8px', fontWeight: 600}}>Mật khẩu</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc'}} required />
-            </div>
-            <button type="submit" disabled={loginBusy} style={{width: '100%', padding: '12px', background: '#000', color: '#fff', borderRadius: '6px', border: 'none', fontWeight: 'bold', cursor: 'pointer'}}>
-              {loginBusy ? 'Đang kiểm tra...' : 'Đăng nhập'}
-            </button>
-            {notice && <p style={{color: 'red', marginTop: '16px'}}>{notice}</p>}
-          </form>
-        </div>
-      );
-    }
-    
-    if (!data) return <div style={{padding: '50px', textAlign: 'center'}}>Lỗi tải dữ liệu. <button onClick={logout}>Đăng xuất / Tải lại</button></div>;
 
+  if (!auth) {
+    return (
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5'}}>
+        <form onSubmit={handleLogin} style={{background: '#fff', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxWidth: '400px', width: '100%', textAlign: 'center'}}>
+          <h2 style={{marginBottom: '20px', color: '#333'}}>Đăng nhập Quản trị</h2>
+          <div style={{marginBottom: '15px', textAlign: 'left'}}>
+            <label style={{display: 'block', marginBottom: '8px', fontWeight: 600}}>Mật khẩu</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc'}} required />
+          </div>
+          <button type="submit" disabled={loginBusy} style={{width: '100%', padding: '12px', background: '#000', color: '#fff', borderRadius: '6px', border: 'none', fontWeight: 'bold', cursor: 'pointer'}}>
+            {loginBusy ? 'Đang kiểm tra...' : 'Đăng nhập'}
+          </button>
+          {notice && <p style={{color: 'red', marginTop: '16px'}}>{notice}</p>}
+        </form>
+      </div>
+    );
+  }
+
+  if (!data) return <div style={{padding: '50px', textAlign: 'center'}}>Lỗi tải dữ liệu. <button onClick={logout}>Đăng xuất / Tải lại</button></div>;
 
   const allRows = guestRows(data);
-  const crmRows = allRows.filter(r => 
-    (filterEvent === 'all' || (r.eventIds && r.eventIds.includes(filterEvent))) && 
-    (filterStatus === 'all' || r.attending === filterStatus) && 
+
+  // Collect all unique groups for filtering
+  const availableGroups = Array.from(new Set([...DEFAULT_GROUPS, ...allRows.map(r => r.group).filter(Boolean)]));
+
+  const crmRows = allRows.filter(r =>
+    (filterGroup === 'all' || r.group === filterGroup) &&
+    (filterEvent === 'all' || (r.eventIds && r.eventIds.includes(filterEvent))) &&
+    (filterStatus === 'all' || r.attending === filterStatus) &&
     (filterSent === 'all' || (filterSent === 'sent' ? r.sent : !r.sent)) &&
-    r.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (r.name.toLowerCase().includes(searchQuery.toLowerCase()) || (r.group && r.group.toLowerCase().includes(searchQuery.toLowerCase())))
   );
-  
+
+  // Overall Stats
   const totalAttending = allRows.filter(r => r.attending === 'yes').reduce((s, r) => s + Number(r.count || 0), 0);
   const totalPending = allRows.filter(r => r.attending === 'pending').length;
   const totalDeclined = allRows.filter(r => r.attending === 'no').length;
+
+  const linkRows = allRows.filter(r => Boolean(r.guestId));
+  const totalLinksCount = linkRows.length;
+  const sentLinksCount = linkRows.filter(r => r.sent).length;
+  const unsentLinksCount = totalLinksCount - sentLinksCount;
+  const sentPercent = totalLinksCount > 0 ? Math.round((sentLinksCount / totalLinksCount) * 100) : 0;
+
+  // Compute dynamic modal rows so live edits/ticks inside modal reflect immediately
+  const modalScopedRows = guestModal
+    ? allRows.filter(r => guestModal.scope === 'all' || (r.eventIds && r.eventIds.includes(guestModal.scope)))
+    : [];
+
+  const modalCounts = {
+    yes: modalScopedRows.filter(r => r.attending === 'yes').length,
+    yesHeadcount: modalScopedRows.filter(r => r.attending === 'yes').reduce((s, r) => s + Number(r.count || 0), 0),
+    pending: modalScopedRows.filter(r => r.attending === 'pending').length,
+    no: modalScopedRows.filter(r => r.attending === 'no').length,
+    unsent: modalScopedRows.filter(r => r.guestId && !r.sent).length,
+    sent: modalScopedRows.filter(r => r.guestId && r.sent).length,
+    all: modalScopedRows.length,
+  };
+
+  const modalFilteredList = modalScopedRows.filter(r => {
+    if (!guestModal) return false;
+    const t = guestModal.tab;
+    const tabMatch =
+      t === 'all' ? true :
+      t === 'yes' ? r.attending === 'yes' :
+      t === 'pending' ? r.attending === 'pending' :
+      t === 'no' ? r.attending === 'no' :
+      t === 'unsent' ? (r.guestId && !r.sent) :
+      t === 'sent' ? (r.guestId && r.sent) : true;
+    const q = modalSearch.trim().toLowerCase();
+    const searchMatch = !q || r.name.toLowerCase().includes(q) || (r.group && r.group.toLowerCase().includes(q));
+    return tabMatch && searchMatch;
+  });
+
+  const modalScopeName = guestModal
+    ? (guestModal.scope === 'all'
+        ? 'Tất cả các tiệc'
+        : (data.events.find(e => e.id === guestModal.scope)?.name || 'Chi tiết tiệc'))
+    : '';
 
   return (
     <div className={styles.adminLayout}>
@@ -197,101 +447,163 @@ export default function AdminPage() {
       </aside>
 
       <main className={styles.mainContent}>
+        {/* Top Auto-Save Status Indicator */}
+        {autoSaveStatus !== 'idle' && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            {autoSaveStatus === 'saving' && (
+              <span className={`${styles.autoSaveBadge} ${styles.autoSaveSaving}`}>⏳ Đang tự động lưu...</span>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <span className={`${styles.autoSaveBadge} ${styles.autoSaveSaved}`}>✓ Đã tự động lưu</span>
+            )}
+            {autoSaveStatus === 'error' && (
+              <span className={`${styles.autoSaveBadge} ${styles.autoSaveError}`}>⚠️ Lỗi tự động lưu — Hãy bấm Lưu thay đổi</span>
+            )}
+          </div>
+        )}
+
         {notice && <div className={styles.notice}><span>{notice}</span><button onClick={() => setNotice('')} style={{background:'transparent',border:'none',cursor:'pointer'}}>✕</button></div>}
         
         {activeTab === 'dashboard' && (
           <div>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>Tổng quan</h1>
+              <div className={styles.seatsSelector}>
+                <span>Quy chuẩn mâm cỗ:</span>
+                <select
+                  value={seatsPerTable}
+                  onChange={e => {
+                    const val = Number(e.target.value);
+                    setSeatsPerTable(val);
+                    if (typeof window !== 'undefined') localStorage.setItem('wedding_seats_per_table', String(val));
+                  }}
+                >
+                  <option value={6}>6 người / mâm</option>
+                  <option value={8}>8 người / mâm</option>
+                  <option value={10}>10 người / mâm</option>
+                  <option value={12}>12 người / mâm</option>
+                </select>
+              </div>
             </div>
+
             <div className={styles.statsGrid}>
               <div 
                 className={`${styles.statCard} ${styles.highlight} ${styles.clickableCard}`}
-                onClick={() => {
-                  const list = allRows.filter(r => r.attending === 'yes');
-                  setGuestModal({
-                    title: 'Khách xác nhận Tham dự',
-                    subtitle: `Tổng cộng ${totalAttending} người (${list.length} phản hồi)`,
-                    list
-                  });
-                }}
+                onClick={() => { setModalSearch(''); setGuestModal({ scope: 'all', tab: 'yes' }); }}
                 title="Bấm để xem danh sách khách tham dự"
               >
                 <h3>{totalAttending}</h3>
                 <p>Khách tham dự</p>
-                <span className={styles.cardHint}>👉 Bấm để xem chi tiết tên khách</span>
+                <span className={styles.tableEstBadge}>🍽️ {formatTables(totalAttending)}</span>
+                <span className={styles.cardHint}>👉 Bấm xem chi tiết khách</span>
               </div>
 
               <div 
                 className={`${styles.statCard} ${styles.clickableCard}`}
-                onClick={() => {
-                  const list = allRows.filter(r => r.attending === 'pending');
-                  setGuestModal({
-                    title: 'Khách Đang chờ phản hồi',
-                    subtitle: `Tổng cộng ${totalPending} khách chưa gửi phản hồi`,
-                    list
-                  });
-                }}
+                onClick={() => { setModalSearch(''); setGuestModal({ scope: 'all', tab: unsentLinksCount > 0 ? 'unsent' : 'sent' }); }}
+                title="Bấm để xem danh sách khách chưa gửi / đã gửi thiệp"
+              >
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  <h3>{sentLinksCount}<span style={{ fontSize: '1.25rem', color: '#999', fontWeight: 500 }}>/{totalLinksCount}</span></h3>
+                  <strong style={{ color: '#2e7d32', fontSize: '1rem' }}>{sentPercent}%</strong>
+                </div>
+                <p>Tiến độ gửi thiệp</p>
+                <div className={styles.progressBarTrack}>
+                  <div className={styles.progressBarFill} style={{ width: `${sentPercent}%` }} />
+                </div>
+                <span className={styles.cardHint}>
+                  {unsentLinksCount > 0 ? `👉 Còn ${unsentLinksCount} khách chưa gửi link` : '✓ Đã gửi đủ 100% khách'}
+                </span>
+              </div>
+
+              <div 
+                className={`${styles.statCard} ${styles.clickableCard}`}
+                onClick={() => { setModalSearch(''); setGuestModal({ scope: 'all', tab: 'pending' }); }}
                 title="Bấm để xem danh sách khách chờ phản hồi"
               >
                 <h3>{totalPending}</h3>
                 <p>Đang chờ phản hồi</p>
-                <span className={styles.cardHint}>👉 Bấm để xem chi tiết tên khách</span>
+                <span className={styles.cardHint}>👉 Bấm xem & copy link nhắc lịch</span>
               </div>
 
               <div 
                 className={`${styles.statCard} ${styles.clickableCard}`}
-                onClick={() => {
-                  const list = allRows.filter(r => r.attending === 'no');
-                  setGuestModal({
-                    title: 'Khách Báo vắng',
-                    subtitle: `Tổng cộng ${totalDeclined} khách không thể tham dự`,
-                    list
-                  });
-                }}
+                onClick={() => { setModalSearch(''); setGuestModal({ scope: 'all', tab: 'no' }); }}
                 title="Bấm để xem danh sách khách báo vắng"
               >
                 <h3>{totalDeclined}</h3>
                 <p>Báo vắng</p>
-                <span className={styles.cardHint}>👉 Bấm để xem chi tiết tên khách</span>
+                <span className={styles.cardHint}>👉 Bấm xem chi tiết tên khách</span>
               </div>
             </div>
             
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>
-                <span>Thống kê theo tiệc</span>
-                <span style={{ fontSize: '0.85rem', color: '#888', fontWeight: 'normal' }}>Bấm vào từng tiệc để xem tên khách</span>
+                <span>Thống kê theo tiệc & Dự kiến số bàn</span>
+                <span style={{ fontSize: '0.85rem', color: '#888', fontWeight: 'normal' }}>Bấm vào từng mục để lọc nhanh danh sách khách</span>
               </h2>
               <div className={styles.statsGrid} style={{marginBottom: 0}}>
                 {data.events.map(event => {
-                  const attendingRows = allRows.filter(r => r.attending === 'yes' && r.eventIds && r.eventIds.includes(event.id));
-                  const pendingRows = allRows.filter(r => r.attending === 'pending' && r.eventIds && r.eventIds.includes(event.id));
+                  const evtRows = allRows.filter(r => r.eventIds && r.eventIds.includes(event.id));
+                  const attendingRows = evtRows.filter(r => r.attending === 'yes');
+                  const pendingRows = evtRows.filter(r => r.attending === 'pending');
+                  const declinedRows = evtRows.filter(r => r.attending === 'no');
+                  const evtLinkRows = evtRows.filter(r => Boolean(r.guestId));
+                  const evtSentCount = evtLinkRows.filter(r => r.sent).length;
                   const evtAttending = attendingRows.reduce((s, r) => s + Number(r.count || 0), 0);
-                  const evtPending = pendingRows.length;
+                  const evtSentPct = evtLinkRows.length > 0 ? Math.round((evtSentCount / evtLinkRows.length) * 100) : 0;
+
                   return (
                     <div 
                       key={event.id} 
                       className={`${styles.statCard} ${styles.clickableCard}`} 
-                      style={{padding: '18px'}}
-                      onClick={() => {
-                        setGuestModal({
-                          title: `Khách tham dự: ${event.name}`,
-                          subtitle: `Tổng cộng ${evtAttending} người tham dự (${attendingRows.length} lượt phản hồi)`,
-                          list: attendingRows
-                        });
-                      }}
-                      title="Bấm để xem danh sách khách dự tiệc này"
+                      style={{padding: '20px'}}
+                      onClick={() => { setModalSearch(''); setGuestModal({ scope: event.id, tab: 'yes' }); }}
+                      title="Bấm để xem chi tiết khách của tiệc này"
                     >
-                      <h4 style={{margin: '0 0 10px 0', fontSize: '1.15rem', color: '#222'}}>{event.name}</h4>
-                      <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.95rem'}}>
-                        <span style={{color: '#555'}}>Tham dự:</span> 
-                        <strong style={{color: '#C5A880', fontSize: '1.1rem'}}>{evtAttending} người</strong>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <h4 style={{margin: 0, fontSize: '1.15rem', color: '#222'}}>{event.name}</h4>
+                        <span className={styles.tableEstBadge}>🍽️ ≈ {(evtAttending / seatsPerTable).toFixed(1).replace(/\.0$/, '')} bàn</span>
                       </div>
-                      <div style={{display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '0.9rem'}}>
-                        <span>Chờ phản hồi:</span> 
-                        <strong>{evtPending}</strong>
+
+                      <div
+                        style={{display: 'flex', justifyContent: 'space-between', padding: '6px 8px', borderRadius: 6, background: '#fdfaf5', marginBottom: '4px', fontSize: '0.95rem'}}
+                        onClick={e => { e.stopPropagation(); setModalSearch(''); setGuestModal({ scope: event.id, tab: 'yes' }); }}
+                      >
+                        <span style={{color: '#555'}}>✓ Tham dự ({attendingRows.length} đơn):</span> 
+                        <strong style={{color: '#C5A880', fontSize: '1.05rem'}}>{evtAttending} người</strong>
                       </div>
-                      <span className={styles.cardHint} style={{marginTop: '10px'}}>👉 Xem danh sách khách</span>
+
+                      <div
+                        style={{display: 'flex', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, color: '#666', fontSize: '0.88rem'}}
+                        onClick={e => { e.stopPropagation(); setModalSearch(''); setGuestModal({ scope: event.id, tab: 'pending' }); }}
+                      >
+                        <span>⏳ Chờ phản hồi:</span> 
+                        <strong>{pendingRows.length} khách</strong>
+                      </div>
+
+                      <div
+                        style={{display: 'flex', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, color: '#888', fontSize: '0.88rem'}}
+                        onClick={e => { e.stopPropagation(); setModalSearch(''); setGuestModal({ scope: event.id, tab: 'no' }); }}
+                      >
+                        <span>✕ Báo vắng:</span> 
+                        <strong>{declinedRows.length} khách</strong>
+                      </div>
+
+                      <div
+                        style={{marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #eee', fontSize: '0.82rem', color: '#666'}}
+                        onClick={e => { e.stopPropagation(); setModalSearch(''); setGuestModal({ scope: event.id, tab: 'unsent' }); }}
+                      >
+                        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
+                          <span>📨 Đã gửi thiệp:</span>
+                          <strong>{evtSentCount}/{evtLinkRows.length} ({evtSentPct}%)</strong>
+                        </div>
+                        <div className={styles.progressBarTrack} style={{height: 6, marginTop: 2}}>
+                          <div className={styles.progressBarFill} style={{width: `${evtSentPct}%`}} />
+                        </div>
+                      </div>
+
+                      <span className={styles.cardHint} style={{marginTop: '10px'}}>👉 Bấm để mở danh sách & lọc chi tiết</span>
                     </div>
                   );
                 })}
@@ -308,7 +620,7 @@ export default function AdminPage() {
                       <tr key={i}>
                         <td><strong>{r.name}</strong></td>
                         <td>{r.location || 'Chưa rõ'}</td>
-                        <td><span className={`${styles.badge} ${r.attending === 'yes' ? styles.success : styles.danger}`}>{r.attending === 'yes' ? 'Tham dự' : 'Không đi'}</span></td>
+                        <td><span className={`${styles.badge} ${r.attending === 'yes' ? styles.success : styles.danger}`}>{r.attending === 'yes' ? `Tham dự (${r.count || 1} người)` : 'Không đi'}</span></td>
                         <td><small>{r.message}</small></td>
                       </tr>
                     ))}
@@ -320,32 +632,115 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* POPUP MODAL HIỂN THỊ CHI TIẾT TÊN KHÁCH & SỐ LƯỢNG */}
+        {/* POPUP MODAL NÂNG CẤP: CÓ TAB CHUYỂN ĐỔI, TÌM KIẾM & COPY LỜI MỜI TẠI CHỖ */}
         {guestModal && (
           <div className={styles.modalBackdrop} onClick={() => setGuestModal(null)}>
             <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
               <div className={styles.modalHeader}>
                 <div>
-                  <h3 className={styles.modalTitle}>{guestModal.title}</h3>
-                  <p className={styles.modalSubtitle}>{guestModal.subtitle}</p>
+                  <h3 className={styles.modalTitle}>Danh sách khách: {modalScopeName}</h3>
+                  <p className={styles.modalSubtitle}>
+                    Tham dự: <strong>{modalCounts.yesHeadcount} người</strong> ({formatTables(modalCounts.yesHeadcount)}) • Chờ phản hồi: <strong>{modalCounts.pending}</strong> • Chưa gửi link: <strong>{modalCounts.unsent}</strong>
+                  </p>
                 </div>
                 <button className={styles.modalCloseBtn} onClick={() => setGuestModal(null)} aria-label="Đóng popup">✕</button>
               </div>
+
+              <div className={styles.modalControls}>
+                <div className={styles.modalTabs}>
+                  <button
+                    type="button"
+                    className={`${styles.modalTab} ${guestModal.tab === 'yes' ? styles.modalTabActive : ''}`}
+                    onClick={() => setGuestModal(prev => ({ ...prev, tab: 'yes' }))}
+                  >
+                    Tham dự ({modalCounts.yes} đơn · {modalCounts.yesHeadcount} người)
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modalTab} ${guestModal.tab === 'pending' ? styles.modalTabActive : ''}`}
+                    onClick={() => setGuestModal(prev => ({ ...prev, tab: 'pending' }))}
+                  >
+                    Chờ phản hồi ({modalCounts.pending})
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modalTab} ${guestModal.tab === 'unsent' ? styles.modalTabActive : ''}`}
+                    onClick={() => setGuestModal(prev => ({ ...prev, tab: 'unsent' }))}
+                  >
+                    Chưa gửi link ({modalCounts.unsent})
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modalTab} ${guestModal.tab === 'sent' ? styles.modalTabActive : ''}`}
+                    onClick={() => setGuestModal(prev => ({ ...prev, tab: 'sent' }))}
+                  >
+                    Đã gửi link ({modalCounts.sent})
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modalTab} ${guestModal.tab === 'no' ? styles.modalTabActive : ''}`}
+                    onClick={() => setGuestModal(prev => ({ ...prev, tab: 'no' }))}
+                  >
+                    Báo vắng ({modalCounts.no})
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.modalTab} ${guestModal.tab === 'all' ? styles.modalTabActive : ''}`}
+                    onClick={() => setGuestModal(prev => ({ ...prev, tab: 'all' }))}
+                  >
+                    Tất cả ({modalCounts.all})
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  className={styles.modalSearchInput}
+                  placeholder="🔍 Tìm nhanh tên khách hoặc nhóm trong danh sách này..."
+                  value={modalSearch}
+                  onChange={e => setModalSearch(e.target.value)}
+                />
+              </div>
+
               <div className={styles.modalBody}>
-                {guestModal.list.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#999', padding: '30px 0' }}>Chưa có khách nào trong danh sách này.</p>
+                {modalFilteredList.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#999', padding: '30px 0' }}>Không có khách nào trong mục này.</p>
                 ) : (
                   <div>
-                    {guestModal.list.map((guest, idx) => (
-                      <div key={guest.id || idx} className={styles.guestItem}>
-                        <div>
-                          <div className={styles.guestName}>{guest.name}</div>
+                    {modalFilteredList.map((guest, idx) => (
+                      <div key={guest.id || guest.guestId || idx} className={styles.guestItem} style={{ gap: 12, flexWrap: 'wrap' }}>
+                        <div style={{ flex: '1 1 220px' }}>
+                          <div className={styles.guestName}>
+                            {guest.name}
+                            {guest.group && <span className={styles.groupBadge}>{guest.group}</span>}
+                          </div>
                           <div className={styles.guestMeta}>
-                            {guest.location && <span>Tiệc: {guest.location} • </span>}
-                            {guest.message ? <span>Lời chúc: "{guest.message}"</span> : <span>Chưa có lời chúc</span>}
+                            {guest.location && <span>Tiệc: <strong>{guest.location}</strong> • </span>}
+                            {guest.message ? <span>Lời chúc: &quot;{guest.message}&quot;</span> : <span>Chưa có lời chúc</span>}
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {guest.guestId && (
+                            <>
+                              <label className={`${styles.sentToggle} ${guest.sent ? styles.sentTrue : styles.sentFalse}`} title="Tick đã gửi hoặc chưa gửi (Tự động lưu)">
+                                <input
+                                  type="checkbox"
+                                  checked={!!guest.sent}
+                                  onChange={() => toggleGuestSent(guest.guestId)}
+                                />
+                                <span>{guest.sent ? 'Đã gửi' : 'Chưa gửi'}</span>
+                              </label>
+                              <button
+                                type="button"
+                                className={`${styles.buttonCopyInvite} ${copiedKey === `msg-${guest.guestId}` ? styles.buttonCopySuccess : ''}`}
+                                onClick={() => copyInviteMessage(guest)}
+                                title="Copy câu mời kèm link và tự động đánh dấu Đã gửi"
+                              >
+                                <Icon icon={copiedKey === `msg-${guest.guestId}` ? Check : Copy} size={13} />
+                                {copiedKey === `msg-${guest.guestId}` ? 'Đã chép lời mời!' : 'Copy lời mời'}
+                              </button>
+                            </>
+                          )}
+
                           {guest.attending === 'yes' && (
                             <span className={`${styles.badge} ${styles.success}`}>
                               Đi {guest.count || 1} người
@@ -376,97 +771,256 @@ export default function AdminPage() {
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>Quản lý Khách & RSVP</h1>
               <div className={styles.headerActions}>
+                <button
+                  type="button"
+                  className={styles.buttonSecondary}
+                  onClick={() => setShowTemplateEditor(v => !v)}
+                >
+                  ✉️ {showTemplateEditor ? 'Ẩn mẫu câu mời' : 'Tùy chỉnh câu mời mẫu'}
+                </button>
                 <button className={styles.buttonSecondary} style={{display: 'flex', alignItems: 'center', gap: '6px'}} onClick={() => {
                    const url = URL.createObjectURL(new Blob([csvFor(crmRows)], { type: 'text/csv;charset=utf-8' }));
                    const a = document.createElement('a'); a.href = url; a.download = 'khach-moi.csv'; a.click();
-                }}><Icon icon={Download} size={16} /> Xuất Excel</button>
+                }}><Icon icon={Download} size={16} /> Xuất Excel ({crmRows.length})</button>
               </div>
             </div>
 
+            {showTemplateEditor && (
+              <div className={styles.templateBox}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <strong style={{ fontSize: '0.9rem', color: '#59472d' }}>
+                    Mẫu câu mời khi bấm nút &quot;Copy Lời mời&quot; (Dùng <code>{'{name}'}</code> cho tên khách và <code>{'{link}'}</code> cho đường dẫn thiệp):
+                  </strong>
+                  <button
+                    type="button"
+                    className={styles.buttonSecondary}
+                    style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                    onClick={() => {
+                      setInviteTemplate(DEFAULT_TEMPLATE);
+                      if (typeof window !== 'undefined') localStorage.setItem('wedding_invite_template', DEFAULT_TEMPLATE);
+                      queueAutoSave(prev => ({ ...prev, texts: { ...prev.texts, inviteShareTemplate: DEFAULT_TEMPLATE } }));
+                    }}
+                  >
+                    Khôi phục mặc định
+                  </button>
+                </div>
+                <textarea
+                  className={styles.textarea}
+                  style={{ minHeight: 68 }}
+                  value={inviteTemplate}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setInviteTemplate(val);
+                    if (typeof window !== 'undefined') localStorage.setItem('wedding_invite_template', val);
+                    queueAutoSave(prev => ({ ...prev, texts: { ...prev.texts, inviteShareTemplate: val } }));
+                  }}
+                />
+              </div>
+            )}
+
             <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Tạo Link Mời Hàng Loạt</h2>
-              <div className={styles.formGrid} style={{gridTemplateColumns: '2fr 1fr 1fr'}}>
-                <textarea className={styles.textarea} placeholder="Nhập tên khách (mỗi người 1 dòng)..." value={bulkGuestNames} onChange={e => setBulkGuestNames(e.target.value)} style={{minHeight: '44px', height: '44px'}} />
+              <h2 className={styles.cardTitle}>
+                <span>Tạo Link Mời Hàng Loạt</span>
+                <span style={{ fontSize: '0.8rem', color: '#2e7d32', fontWeight: 500 }}>✓ Tự động lưu ngay khi tạo</span>
+              </h2>
+              <div className={styles.formGrid} style={{gridTemplateColumns: '2fr 1fr 1fr auto'}}>
+                <textarea
+                  className={styles.textarea}
+                  placeholder="Nhập tên khách (mỗi người 1 dòng)&#10;VD:&#10;Vợ chồng Anh Tuấn&#10;Gia đình Chị Lan"
+                  value={bulkGuestNames}
+                  onChange={e => setBulkGuestNames(e.target.value)}
+                  style={{minHeight: '52px', height: '52px'}}
+                />
+                <select className={styles.select} value={bulkGroup} onChange={e => setBulkGroup(e.target.value)}>
+                  {DEFAULT_GROUPS.map(g => <option key={g} value={g}>Nhóm: {g}</option>)}
+                </select>
                 <select className={styles.select} value={bulkEventId} onChange={e => setBulkEventId(e.target.value)}>
-                  <option value="">-- Mặc định (Tất cả tiệc) --</option>
+                  <option value="">-- Mặc định ({data.events[0]?.name || 'Tất cả tiệc'}) --</option>
                   {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
-                <button className={styles.buttonPrimary} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'}} onClick={addBulkGuests}><Icon icon={Plus} size={16} /> Tạo link</button>
+                <button className={styles.buttonPrimary} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', whiteSpace: 'nowrap'}} onClick={addBulkGuests}>
+                  <Icon icon={Plus} size={16} /> Tạo link
+                </button>
               </div>
             </div>
 
             <div className={styles.card}>
-              <div style={{display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap'}}>
-                <input className={styles.input} style={{flex: 1, minWidth: '200px'}} placeholder="Tìm tên khách..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                <select className={styles.select} style={{width: '200px'}} value={filterEvent} onChange={e => setFilterEvent(e.target.value)}><option value="all">Tất cả tiệc</option>{data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select>
-                <select className={styles.select} style={{width: '150px'}} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}><option value="all">Mọi trạng thái</option><option value="pending">Chờ phản hồi</option><option value="yes">Tham dự</option><option value="no">Không đi</option></select>
-                <select className={styles.select} style={{width: '150px'}} value={filterSent} onChange={e => setFilterSent(e.target.value)}><option value="all">Tất cả gửi thiệp</option><option value="sent">Đã gửi link</option><option value="unsent">Chưa gửi link</option></select>
+              <div style={{display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap'}}>
+                <input className={styles.input} style={{flex: '1 1 200px'}} placeholder="🔍 Tìm tên khách hoặc nhóm..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                <select className={styles.select} style={{width: '165px'}} value={filterGroup} onChange={e => setFilterGroup(e.target.value)}>
+                  <option value="all">Tất cả nhóm</option>
+                  {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <select className={styles.select} style={{width: '175px'}} value={filterEvent} onChange={e => setFilterEvent(e.target.value)}>
+                  <option value="all">Tất cả tiệc</option>
+                  {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+                <select className={styles.select} style={{width: '155px'}} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                  <option value="all">Mọi phản hồi</option>
+                  <option value="pending">Chờ phản hồi</option>
+                  <option value="yes">Tham dự</option>
+                  <option value="no">Không đi</option>
+                </select>
+                <select className={styles.select} style={{width: '155px'}} value={filterSent} onChange={e => setFilterSent(e.target.value)}>
+                  <option value="all">Tất cả gửi thiệp</option>
+                  <option value="unsent">Chưa gửi link ({unsentLinksCount})</option>
+                  <option value="sent">Đã gửi link ({sentLinksCount})</option>
+                </select>
               </div>
               
               <div className={styles.tableWrapper}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>Khách mời</th>
+                      <th>Khách mời & Nhóm</th>
                       <th style={{textAlign: 'center'}}>Đã gửi link?</th>
-                      <th>Link Gửi Khách</th>
+                      <th>Gửi Thiệp Nhanh</th>
                       <th>Phản hồi</th>
                       <th>Chi tiết RSVP</th>
                       <th>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {crmRows.map((row, i) => (
-                      <tr key={row.id || row.guestId || i}>
-                        <td>
-                          <strong>{row.name}</strong> 
-                          {row.group && <span className={styles.groupBadge}>{row.group}</span>}
-                          {row.legacy && <span className={`${styles.badge} ${styles.neutral}`}>Tự RSVP</span>}
-                        </td>
-                        <td style={{textAlign: 'center'}}>
-                          {row.guestId ? (
-                            <label className={`${styles.sentToggle} ${row.sent ? styles.sentTrue : styles.sentFalse}`} title="Bấm để tick đã gửi hoặc chưa gửi">
-                              <input 
-                                type="checkbox" 
-                                checked={!!row.sent} 
-                                onChange={() => toggleGuestSent(row.guestId)} 
-                              />
-                              <span>{row.sent ? 'Đã gửi' : 'Chưa gửi'}</span>
-                            </label>
-                          ) : (
-                            <span style={{color: '#bbb', fontSize: '0.8rem'}}>—</span>
-                          )}
-                        </td>
-                        <td>
-                          {row.guestId ? (
-                            <div className={styles.linkBox}>
-                              <input className={styles.linkInput} readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${data.links.find(l => l.id === row.guestId)?.slug}`} />
-                              <button className={styles.buttonSecondary} style={{padding: '6px 10px'}} onClick={() => navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${data.links.find(l => l.id === row.guestId)?.slug}`)}><Icon icon={LinkIcon} size={14} /></button>
+                    {crmRows.map((row, i) => {
+                      const isEditing = editingGuestId === row.guestId && Boolean(row.guestId);
+                      const guestUrl = getGuestUrl(row);
+                      return (
+                        <tr key={row.id || row.guestId || i}>
+                          <td style={{ minWidth: 210 }}>
+                            {isEditing ? (
+                              <div className={styles.inlineEditBox}>
+                                <input
+                                  className={styles.inlineInput}
+                                  value={editForm.guestName}
+                                  onChange={e => setEditForm(prev => ({ ...prev, guestName: e.target.value }))}
+                                  placeholder="Tên khách mời..."
+                                  onKeyDown={e => e.key === 'Enter' && saveEditGuest(row.guestId)}
+                                  autoFocus
+                                />
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  <select
+                                    className={styles.inlineSelect}
+                                    value={editForm.group}
+                                    onChange={e => setEditForm(prev => ({ ...prev, group: e.target.value }))}
+                                  >
+                                    {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                                  </select>
+                                  <select
+                                    className={styles.inlineSelect}
+                                    value={editForm.eventId}
+                                    onChange={e => setEditForm(prev => ({ ...prev, eventId: e.target.value }))}
+                                  >
+                                    {data.events.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+                                  </select>
+                                </div>
+                                <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                                  <button type="button" className={styles.buttonPrimary} style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={() => saveEditGuest(row.guestId)}>✓ Lưu</button>
+                                  <button type="button" className={styles.buttonSecondary} style={{ padding: '4px 10px', fontSize: '0.78rem' }} onClick={() => setEditingGuestId(null)}>Hủy</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                                  <strong>{row.name}</strong>
+                                  {row.group && <span className={styles.groupBadge}>{row.group}</span>}
+                                  {row.legacy && <span className={`${styles.badge} ${styles.neutral}`}>Tự RSVP</span>}
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: '#888', marginTop: 3 }}>
+                                  Tiệc mời: {row.location}
+                                </div>
+                              </div>
+                            )}
+                          </td>
+
+                          <td style={{textAlign: 'center'}}>
+                            {row.guestId ? (
+                              <label className={`${styles.sentToggle} ${row.sent ? styles.sentTrue : styles.sentFalse}`} title="Bấm để tick đã gửi hoặc chưa gửi (Tự động lưu)">
+                                <input 
+                                  type="checkbox" 
+                                  checked={!!row.sent} 
+                                  onChange={() => toggleGuestSent(row.guestId)} 
+                                />
+                                <span>{row.sent ? 'Đã gửi' : 'Chưa gửi'}</span>
+                              </label>
+                            ) : (
+                              <span style={{color: '#bbb', fontSize: '0.8rem'}}>—</span>
+                            )}
+                          </td>
+
+                          <td>
+                            {row.guestId ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  <button
+                                    type="button"
+                                    className={`${styles.buttonCopyInvite} ${copiedKey === `msg-${row.guestId}` ? styles.buttonCopySuccess : ''}`}
+                                    onClick={() => copyInviteMessage(row)}
+                                    title="Copy câu mời kèm link và tự động đánh dấu Đã gửi"
+                                  >
+                                    <Icon icon={copiedKey === `msg-${row.guestId}` ? Check : Copy} size={14} />
+                                    {copiedKey === `msg-${row.guestId}` ? 'Đã copy lời mời!' : 'Copy Lời mời + Link'}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className={styles.buttonZalo}
+                                    onClick={() => shareZalo(row)}
+                                    title="Copy lời mời và mở chia sẻ Zalo"
+                                  >
+                                    <Icon icon={MessageCircle} size={14} /> Zalo
+                                  </button>
+                                </div>
+                                <div className={styles.linkBox}>
+                                  <input className={styles.linkInput} readOnly value={guestUrl} />
+                                  <button
+                                    type="button"
+                                    className={styles.buttonSecondary}
+                                    style={{padding: '5px 9px', fontSize: '0.78rem', whiteSpace: 'nowrap'}}
+                                    onClick={() => copyRawLink(row)}
+                                    title="Chỉ copy đường dẫn URL"
+                                  >
+                                    {copiedKey === `link-${row.guestId}` ? '✓ Đã chép' : <Icon icon={LinkIcon} size={13} />}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : <span style={{color: '#999', fontSize: '0.85rem'}}>N/A (Thiệp chung)</span>}
+                          </td>
+
+                          <td>
+                            <span className={`${styles.badge} ${row.attending === 'yes' ? styles.success : row.attending === 'no' ? styles.danger : styles.warning}`}>
+                              {row.attending === 'yes' ? 'Tham dự' : row.attending === 'no' ? 'Không đi' : 'Chờ phản hồi'}
+                            </span>
+                          </td>
+
+                          <td>
+                            {row.attending !== 'pending' && (
+                              <div style={{fontSize: '0.85rem'}}>
+                                <div>{row.location ? row.location.split(' + ').map((loc, idx) => <span key={idx} className={styles.locationBadge}>{loc}</span>) : ''}</div>
+                                {row.attending === 'yes' && <div style={{marginTop: '4px'}}><strong>Đi:</strong> {row.count} người</div>}
+                                {row.message && <div style={{marginTop: '4px', color: '#666', fontStyle: 'italic'}}>&quot;{row.message}&quot;</div>}
+                              </div>
+                            )}
+                          </td>
+
+                          <td>
+                            <div style={{display: 'flex', gap: '6px'}}>
+                              {row.guestId && (
+                                <button
+                                  type="button"
+                                  title="Sửa tên khách / nhóm / tiệc mời"
+                                  className={styles.iconBtn}
+                                  onClick={() => startEditGuest(row)}
+                                >
+                                  ✏️
+                                </button>
+                              )}
+                              {row.id && <button title="Xóa phản hồi RSVP" className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{padding: '6px 10px'}} onClick={() => deleteRsvp(row.id)}><Icon icon={Trash2} size={14} /></button>}
+                              {row.guestId && <button title="Xóa Link khách mời" className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{padding: '6px 10px'}} onClick={() => removeGuestLink(row.guestId)}><Icon icon={Trash2} size={14} /></button>}
                             </div>
-                          ) : <span style={{color: '#999', fontSize: '0.85rem'}}>N/A (Thiệp chung)</span>}
-                        </td>
-                        <td>
-                          <span className={`${styles.badge} ${row.attending === 'yes' ? styles.success : row.attending === 'no' ? styles.danger : styles.warning}`}>
-                            {row.attending === 'yes' ? 'Tham dự' : row.attending === 'no' ? 'Không đi' : 'Chờ phản hồi'}
-                          </span>
-                        </td>
-                        <td>
-                          {row.attending !== 'pending' && (
-                            <div style={{fontSize: '0.85rem'}}>
-                              <div>{row.location ? row.location.split(' + ').map((loc, i) => <span key={i} className={styles.locationBadge}>{loc}</span>) : ''}</div>
-                              {row.attending === 'yes' && <div style={{marginTop: '4px'}}><strong>Đi:</strong> {row.count} người</div>}
-                              {row.message && <div style={{marginTop: '4px', color: '#666', fontStyle: 'italic'}}>&quot;{row.message}&quot;</div>}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <div style={{display: 'flex', gap: '8px'}}>
-                            {row.id && <button title="Xóa phản hồi" className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{padding: '6px 10px'}} onClick={() => deleteRsvp(row.id)}><Icon icon={Trash2} size={14} /></button>}
-                            {row.guestId && <button title="Xóa Link" className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{padding: '6px 10px'}} onClick={() => removeGuestLink(row.guestId)}><Icon icon={Trash2} size={14} /></button>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {!crmRows.length && <tr><td colSpan="6" style={{textAlign: 'center'}}>Không có dữ liệu phù hợp.</td></tr>}
                   </tbody>
                 </table>
@@ -500,7 +1054,7 @@ export default function AdminPage() {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}><label className={styles.label}>Link ảnh Logo</label><input className={styles.input} value={data.invitation.logoUrl || ''} onChange={e => handleInputChange(e, 'logoUrl')} placeholder="VD: https://..." /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Link ảnh nền chính (Hero Background)</label><input className={styles.input} value={data.invitation.heroBgUrl || ''} onChange={e => handleInputChange(e, 'heroBgUrl')} placeholder="VD: https://..." /></div>
-                  <div className={styles.formGroup}><label className={styles.label}>Link ảnh kỉ niệm (Cạnh sổ lưu bút)</label><input className={styles.input} value={data.invitation.guestbookPhotoUrl || ''} onChange={e => handleInputChange(e, 'guestbookPhotoUrl')} placeholder="VD: https://..." /></div>
+                <div className={styles.formGroup}><label className={styles.label}>Link ảnh kỉ niệm (Cạnh sổ lưu bút)</label><input className={styles.input} value={data.invitation.guestbookPhotoUrl || ''} onChange={e => handleInputChange(e, 'guestbookPhotoUrl')} placeholder="VD: https://..." /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Avatar Chú rể</label><input className={styles.input} value={data.invitation.groomAvatarUrl || ''} onChange={e => handleInputChange(e, 'groomAvatarUrl')} placeholder="VD: https://..." /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Avatar Cô dâu</label><input className={styles.input} value={data.invitation.brideAvatarUrl || ''} onChange={e => handleInputChange(e, 'brideAvatarUrl')} placeholder="VD: https://..." /></div>
               </div>
@@ -540,7 +1094,7 @@ export default function AdminPage() {
                 <div className={styles.formGroup}><label className={styles.label}>Tên Ngân Hàng</label><input className={styles.input} value={data.invitation.bankName || ''} onChange={e => handleInputChange(e, 'bankName')} placeholder="VD: Vietcombank" /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Tên Chủ Tài Khoản</label><input className={styles.input} value={data.invitation.accountName || ''} onChange={e => handleInputChange(e, 'accountName')} placeholder="VD: NGUYEN VAN A" /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Số Tài Khoản</label><input className={styles.input} value={data.invitation.accountNumber || ''} onChange={e => handleInputChange(e, 'accountNumber')} placeholder="VD: 123456789" /></div>
-                  <div className={styles.formGroup}><label className={styles.label}>Link ảnh QR Mừng cưới</label><input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="VD: https://..." /></div>
+                <div className={styles.formGroup}><label className={styles.label}>Link ảnh QR Mừng cưới</label><input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="VD: https://..." /></div>
               </div>
             </div>
 
@@ -563,7 +1117,8 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-          <div className={styles.card}>
+
+            <div className={styles.card}>
               <h2 className={styles.cardTitle}>Danh Sách Nhạc (Playlist)</h2>
               <button className={styles.buttonSecondary} style={{marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px'}} onClick={() => setData(prev => ({ ...prev, invitation: { ...prev.invitation, musicTracks: [...(prev.invitation.musicTracks || []), { name: '', url: '' }] } }))}><Icon icon={Plus} size={16} /> Thêm Bài Hát</button>
               {(data.invitation.musicTracks || []).map((track, i) => (
@@ -576,8 +1131,7 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-
-            </div>
+          </div>
         )}
 
         {activeTab === 'gallery' && (
