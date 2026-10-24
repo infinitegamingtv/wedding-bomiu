@@ -48,6 +48,9 @@ export default function AdminPage() {
   const [giftFilterGroup, setGiftFilterGroup] = useState('all');
   const [giftFilterEvent, setGiftFilterEvent] = useState('all');
   const [giftFilterMethod, setGiftFilterMethod] = useState('all'); // 'all' | 'gifted' | 'ungifted' | 'cash' | 'transfer' | 'gold'
+  const [activeGiftRowKey, setActiveGiftRowKey] = useState(null);
+  const [showWalkInForm, setShowWalkInForm] = useState(false);
+  const [showGiftGroupStats, setShowGiftGroupStats] = useState(false);
 
   // Walk-in Envelope Form (Khách mừng phát sinh ngoài danh sách link)
   const [walkInName, setWalkInName] = useState('');
@@ -67,7 +70,7 @@ export default function AdminPage() {
   const [seatingEvent, setSeatingEvent] = useState('all');
   const [seatingGroup, setSeatingGroup] = useState('all');
   const [seatingStatus, setSeatingStatus] = useState('active'); // 'active' (yes + pending) | 'yes' | 'all'
-  const [seatingAssignFilter, setSeatingAssignFilter] = useState('all'); // 'all' | 'unassigned' | 'assigned'
+  const [seatingAssignFilter, setSeatingAssignFilter] = useState('unassigned'); // 'unassigned' | 'all' | 'assigned'
   const [seatingSearch, setSeatingSearch] = useState('');
   const [newTableName, setNewTableName] = useState('');
   const [extraTables, setExtraTables] = useState([]);
@@ -1259,19 +1262,19 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB MỚI: XẾP MÂM / SƠ ĐỒ BÀN TIỆC */}
+        {/* TAB MỚI: XẾP MÂM / SƠ ĐỒ BÀN TIỆC (GIAO DIỆN 2 CỘT TINH GỌN) */}
         {activeTab === 'seating' && (
           <div>
-            <div className={styles.header}>
+            <div className={styles.header} style={{ marginBottom: 18 }}>
               <div>
                 <h1 className={styles.pageTitle}>🍽️ Sơ Đồ Xếp Mâm / Bàn Tiệc</h1>
-                <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.9rem' }}>
-                  Xem trực quan mâm nào có những khách nào, thêm/gỡ khách 1 chạm và tự động lưu ngay lập tức.
+                <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.88rem' }}>
+                  Chọn khách từ cột bên trái để đưa vào các mâm bên phải (Tự động lưu ngay lập tức).
                 </p>
               </div>
               <div className={styles.headerActions} style={{ flexWrap: 'wrap' }}>
                 <div className={styles.seatsSelector}>
-                  <span>Số người/mâm:</span>
+                  <span>Quy chuẩn:</span>
                   <select
                     value={seatsPerTable}
                     onChange={e => {
@@ -1292,7 +1295,7 @@ export default function AdminPage() {
                   onClick={handleAutoPackTables}
                   title="Tự động chia các khách chưa có mâm vào các bàn theo từng Nhóm"
                 >
-                  ⚡ Tự động gợi ý xếp mâm
+                  ⚡ Tự động xếp mâm
                 </button>
                 <button
                   type="button"
@@ -1300,7 +1303,7 @@ export default function AdminPage() {
                   onClick={() => window.print()}
                   title="In sơ đồ các mâm ra giấy A4 hoặc lưu file PDF để đưa cho lễ tân dẫn khách"
                 >
-                  🖨️ In Sơ Đồ Mâm (A4/PDF)
+                  🖨️ In Sơ Đồ (A4)
                 </button>
                 <button
                   type="button"
@@ -1314,399 +1317,349 @@ export default function AdminPage() {
                     a.click();
                   }}
                 >
-                  <Icon icon={Download} size={16} /> Xuất Sơ Đồ Mâm ({seatingEventRows.length})
+                  <Icon icon={Download} size={16} /> Xuất Excel
                 </button>
               </div>
             </div>
 
-            {/* Chọn Tiệc & Bộ lọc đối tượng xếp mâm */}
-            <div className={`${styles.card} ${styles.noPrint}`} style={{ padding: '16px 20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong style={{ fontSize: '0.9rem', color: '#555', marginRight: 4 }}>Chọn Tiệc cần xếp mâm:</strong>
-                  <button
-                    type="button"
-                    className={`${styles.modalTab} ${seatingEvent === 'all' ? styles.modalTabActive : ''}`}
-                    onClick={() => setSeatingEvent('all')}
-                  >
-                    Tất cả tiệc ({allRows.filter(r => r.attending !== 'no').length})
-                  </button>
-                  {data.events.map(ev => {
-                    const cnt = allRows.filter(r => r.attending !== 'no' && r.eventIds && r.eventIds.includes(ev.id)).length;
-                    return (
-                      <button
-                        key={ev.id}
-                        type="button"
-                        className={`${styles.modalTab} ${seatingEvent === ev.id ? styles.modalTabActive : ''}`}
-                        onClick={() => setSeatingEvent(ev.id)}
-                      >
-                        {ev.name} ({cnt})
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.85rem', color: '#666' }}>Đối tượng:</span>
-                  <select className={styles.inlineSelect} value={seatingStatus} onChange={e => setSeatingStatus(e.target.value)}>
-                    <option value="active">Khách Tham dự + Chờ phản hồi</option>
-                    <option value="yes">Chỉ khách đã xác nhận Tham dự</option>
-                    <option value="all">Tất cả (Gồm cả Báo vắng)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Thẻ thống kê Xếp mâm */}
-            <div className={`${styles.statsGrid} ${styles.noPrint}`}>
-              <div
-                className={`${styles.statCard} ${styles.clickableCard}`}
-                onClick={() => setSeatingAssignFilter('all')}
-              >
-                <h3>{totalSeatingPeople} <span style={{ fontSize: '1.1rem', color: '#888', fontWeight: 500 }}>người</span></h3>
-                <p>Tổng khách cần xếp ({seatingEventRows.length} đơn)</p>
-                <span className={styles.tableEstBadge}>🍽️ Dự kiến: {formatTables(totalSeatingPeople)}</span>
+            {/* Thanh điều khiển & Tóm tắt gọn trên 1 hàng duy nhất */}
+            <div className={`${styles.compactToolbar} ${styles.noPrint}`}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`${styles.modalTab} ${seatingEvent === 'all' ? styles.modalTabActive : ''}`}
+                  onClick={() => setSeatingEvent('all')}
+                >
+                  Tất cả tiệc ({allRows.filter(r => r.attending !== 'no').length})
+                </button>
+                {data.events.map(ev => {
+                  const cnt = allRows.filter(r => r.attending !== 'no' && r.eventIds && r.eventIds.includes(ev.id)).length;
+                  return (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      className={`${styles.modalTab} ${seatingEvent === ev.id ? styles.modalTabActive : ''}`}
+                      onClick={() => setSeatingEvent(ev.id)}
+                    >
+                      {ev.name} ({cnt})
+                    </button>
+                  );
+                })}
+                <select className={styles.inlineSelect} style={{ marginLeft: 4 }} value={seatingStatus} onChange={e => setSeatingStatus(e.target.value)}>
+                  <option value="active">Tham dự + Chờ RSVP</option>
+                  <option value="yes">Chỉ khách Tham dự</option>
+                  <option value="all">Tất cả khách</option>
+                </select>
               </div>
 
-              <div
-                className={`${styles.statCard} ${styles.highlight} ${styles.clickableCard}`}
-                onClick={() => setSeatingAssignFilter('assigned')}
-              >
-                <h3 style={{ color: '#2e7d32' }}>{totalSeatedPeople} <span style={{ fontSize: '1.1rem', color: '#888', fontWeight: 500 }}>người</span></h3>
-                <p>Đã xếp vào mâm ({seatedEventRows.length} khách)</p>
-                <span className={styles.cardHint}>👉 Bấm để lọc khách đã có mâm</span>
-              </div>
-
-              <div
-                className={`${styles.statCard} ${styles.clickableCard}`}
-                onClick={() => setSeatingAssignFilter('unassigned')}
-              >
-                <h3 style={{ color: totalUnseatedPeople > 0 ? '#e65100' : '#2e7d32' }}>
-                  {totalUnseatedPeople} <span style={{ fontSize: '1.1rem', color: '#888', fontWeight: 500 }}>người</span>
-                </h3>
-                <p>Chưa xếp mâm ({unseatedEventRows.length} khách)</p>
-                <span className={styles.cardHint}>
-                  {totalUnseatedPeople > 0 ? '👉 Bấm để lọc khách chưa có mâm' : '✓ Đã xếp mâm 100% khách!'}
+              <div className={styles.summaryPills}>
+                <span className={styles.summaryPill}>
+                  Tổng: <strong>{totalSeatingPeople} người</strong> ({formatTables(totalSeatingPeople)})
+                </span>
+                <span className={`${styles.summaryPill} ${styles.summaryPillSuccess}`}>
+                  ✓ Đã xếp: <strong>{totalSeatedPeople} người</strong> ({seatedEventRows.length} khách)
+                </span>
+                <span className={`${styles.summaryPill} ${totalUnseatedPeople > 0 ? styles.summaryPillWarn : styles.summaryPillSuccess}`}>
+                  ⏳ Chưa xếp: <strong>{totalUnseatedPeople} người</strong> ({unseatedEventRows.length} khách)
                 </span>
               </div>
             </div>
 
-            {/* SƠ ĐỒ CÁC MÂM TRỰC QUAN: MÂM NÀO CÓ NHỮNG KHÁCH NÀO */}
-            <div className={styles.card}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-                <div>
-                  <h2 className={styles.cardTitle} style={{ marginBottom: 4 }}>
-                    Sơ Đồ Các Mâm ({allTableNames.length} mâm)
-                  </h2>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#777' }}>
-                    Mỗi ô dưới đây là 1 mâm cỗ. Bạn có thể chọn thêm khách trực tiếp vào từng mâm hoặc đổi tên mâm (VD: &quot;Mâm 1 - Bạn Đại Học&quot;).
-                  </p>
-                </div>
-                <form onSubmit={handleAddTable} className={styles.noPrint} style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    type="text"
-                    className={styles.inlineInput}
-                    style={{ width: 210 }}
-                    placeholder={`VD: Mâm ${allTableNames.length + 1} - Đồng nghiệp`}
-                    value={newTableName}
-                    onChange={e => setNewTableName(e.target.value)}
-                  />
-                  <button type="submit" className={styles.buttonPrimary} style={{ padding: '8px 14px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                    + Thêm Mâm Mới
-                  </button>
-                </form>
-              </div>
-
-              <div className={styles.tablesGrid}>
-                {allTableNames.map(tName => {
-                  const guestsInTable = tableGuestsMap[tName] || [];
-                  const seatedPeople = tableLoadMap[tName] || 0;
-                  const isFull = seatedPeople === seatsPerTable;
-                  const isOver = seatedPeople > seatsPerTable;
-                  const fillPct = Math.min(100, Math.round((seatedPeople / seatsPerTable) * 100));
-
-                  const cardStateClass = isOver
-                    ? styles.tableCardOver
-                    : isFull
-                    ? styles.tableCardFull
-                    : '';
-
-                  const capBadgeClass = isOver
-                    ? styles.capOver
-                    : isFull
-                    ? styles.capFull
-                    : styles.capAvailable;
-
-                  const capText = isOver
-                    ? `${seatedPeople}/${seatsPerTable} người (Quá ${seatedPeople - seatsPerTable})`
-                    : isFull
-                    ? `${seatedPeople}/${seatsPerTable} người (Đủ mâm)`
-                    : `${seatedPeople}/${seatsPerTable} người (Trống ${seatsPerTable - seatedPeople})`;
-
-                  return (
-                    <div key={tName} className={`${styles.tableCard} ${cardStateClass}`}>
-                      <div className={styles.tableCardHeader}>
-                        <div className={styles.tableCardTitle}>
-                          <span>🍽️ {tName}</span>
-                          <button
-                            type="button"
-                            className={styles.iconBtn}
-                            style={{ padding: '2px 6px', fontSize: '0.72rem', border: 'none', background: 'transparent' }}
-                            title="Đổi tên mâm này"
-                            onClick={() => handleRenameTable(tName)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.iconBtn}
-                            style={{ padding: '2px 6px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#c62828' }}
-                            title={guestsInTable.length > 0 ? 'Gỡ khách & xóa mâm này' : 'Xóa mâm trống này'}
-                            onClick={() => handleDeleteOrClearTable(tName, guestsInTable.length)}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                        <span className={`${styles.tableCapacityBadge} ${capBadgeClass}`}>
-                          {capText}
-                        </span>
-                      </div>
-
-                      <div className={styles.progressBarTrack} style={{ height: 6, marginTop: 0 }}>
-                        <div
-                          className={styles.progressBarFill}
-                          style={{
-                            width: `${fillPct}%`,
-                            background: isOver ? '#e53935' : isFull ? '#2e7d32' : '#C5A880'
-                          }}
-                        />
-                      </div>
-
-                      <div className={styles.tableGuestList}>
-                        {guestsInTable.length === 0 ? (
-                          <div style={{ color: '#aaa', fontSize: '0.83rem', textAlign: 'center', padding: '24px 8px', border: '1px dashed #eee', borderRadius: 8 }}>
-                            Chưa có khách nào ở {tName}.<br />Chọn khách ở menu bên dưới để xếp vào mâm.
-                          </div>
-                        ) : (
-                          guestsInTable.map((g, idx) => {
-                            const pCount = guestSeatCount(g);
-                            return (
-                              <div key={g.guestId || g.id || idx} className={styles.tableGuestItem}>
-                                <div style={{ minWidth: 0, flex: 1 }}>
-                                  <div style={{ fontWeight: 600, color: '#333', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-                                    <span>{idx + 1}. {g.name}</span>
-                                    {g.group && <span className={styles.groupBadge} style={{ marginLeft: 0 }}>{g.group}</span>}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#777', marginTop: 2 }}>
-                                    {g.attending === 'yes' ? (
-                                      <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ Tham dự ({pCount} người)</span>
-                                    ) : (
-                                      <span style={{ color: '#856404' }}>⏳ Chờ phản hồi (Dự kiến {pCount} người)</span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span className={`${styles.badge} ${styles.neutral}`} style={{ fontSize: '0.75rem' }}>
-                                    {pCount} người
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className={styles.tableRemoveBtn}
-                                    title="Gỡ khách này khỏi mâm"
-                                    onClick={() => updateGuestGift(g, { tableName: '' })}
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-
-                      {/* Dropdown thêm nhanh khách chưa xếp mâm vào mâm này */}
-                      <div className={styles.noPrint} style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
-                        <select
-                          className={styles.inlineSelect}
-                          style={{ width: '100%', padding: '7px 10px', background: '#fdfaf5', borderColor: '#d8c3a5', fontWeight: 600, color: '#59472d' }}
-                          value=""
-                          onChange={e => {
-                            const targetId = e.target.value;
-                            if (!targetId) return;
-                            const targetRow = unseatedEventRows.find(r => (r.guestId || r.id) === targetId);
-                            if (targetRow) {
-                              updateGuestGift(targetRow, { tableName: tName });
-                            }
-                          }}
-                        >
-                          <option value="">+ Thêm khách chưa xếp vào {tName} ({unseatedEventRows.length})...</option>
-                          {unseatedEventRows.map(u => (
-                            <option key={u.guestId || u.id} value={u.guestId || u.id}>
-                              {u.name} ({guestSeatCount(u)} người{u.group ? ` • ${u.group}` : ''})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* BẢNG DANH SÁCH KHÁCH & CHỌN MÂM 1 CHẠM */}
-            <div className={`${styles.card} ${styles.noPrint}`}>
-              <h2 className={styles.cardTitle}>
-                <span>Danh sách Khách & Gán Mâm Nhanh ({seatingFilteredRows.length} khách)</span>
-              </h2>
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                <input
-                  className={styles.input}
-                  style={{ flex: '1 1 220px' }}
-                  placeholder="🔍 Tìm tên khách, nhóm hoặc tên mâm..."
-                  value={seatingSearch}
-                  onChange={e => { setSeatingSearch(e.target.value); setSeatingLimit(50); }}
-                />
-                <select className={styles.select} style={{ width: '190px' }} value={seatingAssignFilter} onChange={e => { setSeatingAssignFilter(e.target.value); setSeatingLimit(50); }}>
-                  <option value="all">Tất cả ({seatingEventRows.length} khách)</option>
-                  <option value="unassigned">⏳ Chưa xếp mâm ({unseatedEventRows.length})</option>
-                  <option value="assigned">✓ Đã xếp mâm ({seatedEventRows.length})</option>
-                </select>
-                <select className={styles.select} style={{ width: '165px' }} value={seatingGroup} onChange={e => { setSeatingGroup(e.target.value); setSeatingLimit(50); }}>
-                  <option value="all">Tất cả nhóm</option>
-                  {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Khách mời & Nhóm</th>
-                      <th>Số người</th>
-                      <th>Mâm hiện tại</th>
-                      <th>Bấm chọn Mâm nhanh (1 chạm)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {seatingFilteredRows.slice(0, seatingLimit).map((row, i) => {
-                      const pCount = guestSeatCount(row);
-                      return (
-                        <tr key={row.guestId || row.id || i} style={{ background: row.tableName ? '#fafdf9' : undefined }}>
-                          <td style={{ minWidth: 200 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-                              <strong>{row.name}</strong>
-                              {row.group && <span className={styles.groupBadge}>{row.group}</span>}
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: '#777', marginTop: 3 }}>
-                              Tiệc: {row.location}
-                            </div>
-                          </td>
-
-                          <td>
-                            <span className={`${styles.badge} ${row.attending === 'yes' ? styles.success : styles.warning}`}>
-                              {row.attending === 'yes' ? `Đi ${pCount} người` : `Chờ RSVP (${pCount})`}
-                            </span>
-                          </td>
-
-                          <td style={{ minWidth: 150 }}>
-                            <select
-                              className={`${styles.methodSelect} ${row.tableName ? styles.methodCash : ''}`}
-                              value={row.tableName || ''}
-                              onChange={e => updateGuestGift(row, { tableName: e.target.value })}
-                            >
-                              <option value="">-- Chưa xếp mâm --</option>
-                              {allTableNames.map(tName => {
-                                const load = tableLoadMap[tName] || 0;
-                                return (
-                                  <option key={tName} value={tName}>
-                                    🍽️ {tName} ({load}/{seatsPerTable} người)
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          </td>
-
-                          <td>
-                            <div className={styles.presetGroup} style={{ marginTop: 0 }}>
-                              {allTableNames.map(tName => {
-                                const load = tableLoadMap[tName] || 0;
-                                const active = row.tableName === tName;
-                                return (
-                                  <button
-                                    key={tName}
-                                    type="button"
-                                    className={`${styles.presetChip} ${active ? styles.presetChipActive : ''}`}
-                                    onClick={() => updateGuestGift(row, { tableName: active ? '' : tName })}
-                                    title={`${tName}: Đang có ${load}/${seatsPerTable} người`}
-                                  >
-                                    {tName} <span style={{ opacity: 0.8, fontWeight: 400 }}>({load}/{seatsPerTable})</span>
-                                  </button>
-                                );
-                              })}
-                              {row.tableName && (
-                                <button
-                                  type="button"
-                                  className={styles.presetChipClear}
-                                  onClick={() => updateGuestGift(row, { tableName: '' })}
-                                >
-                                  ✕ Bỏ mâm
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {!seatingFilteredRows.length && (
-                      <tr>
-                        <td colSpan="4" style={{ textAlign: 'center', color: '#888', padding: '24px' }}>
-                          Không có khách nào phù hợp với bộ lọc.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {seatingFilteredRows.length > seatingLimit && (
-                <div className={styles.paginationBar}>
-                  <span>Đang hiển thị <strong>{seatingLimit}</strong> / <strong>{seatingFilteredRows.length}</strong> khách</span>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setSeatingLimit(l => l + 50)}>
-                      + Hiển thị thêm 50 khách
+            {/* BỐ CỤC 2 CỘT: CỘT TRÁI (KHÁCH CHƯA XẾP) — CỘT PHẢI (SƠ ĐỒ CÁC MÂM) */}
+            <div className={styles.seatingWorkspace}>
+              {/* CỘT TRÁI: DANH SÁCH KHÁCH GỌN GÀNG */}
+              <aside className={`${styles.unassignedPanel} ${styles.noPrint}`}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#222' }}>
+                    Danh sách khách ({seatingFilteredRows.length})
+                  </h3>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      type="button"
+                      className={`${styles.miniFilterBtn} ${seatingAssignFilter === 'unassigned' ? styles.miniFilterBtnActive : ''}`}
+                      onClick={() => setSeatingAssignFilter(seatingAssignFilter === 'unassigned' ? 'all' : 'unassigned')}
+                    >
+                      Chưa xếp ({unseatedEventRows.length})
                     </button>
-                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setSeatingLimit(seatingFilteredRows.length)}>
-                      Hiện tất cả ({seatingFilteredRows.length})
+                    <button
+                      type="button"
+                      className={`${styles.miniFilterBtn} ${seatingAssignFilter === 'all' ? styles.miniFilterBtnActive : ''}`}
+                      onClick={() => setSeatingAssignFilter('all')}
+                    >
+                      Tất cả ({seatingEventRows.length})
                     </button>
                   </div>
                 </div>
-              )}
+
+                <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                  <input
+                    className={styles.inlineInput}
+                    placeholder="🔍 Tìm tên khách..."
+                    value={seatingSearch}
+                    onChange={e => { setSeatingSearch(e.target.value); setSeatingLimit(50); }}
+                  />
+                  <select
+                    className={styles.inlineSelect}
+                    style={{ maxWidth: 115 }}
+                    value={seatingGroup}
+                    onChange={e => { setSeatingGroup(e.target.value); setSeatingLimit(50); }}
+                  >
+                    <option value="all">Mọi nhóm</option>
+                    {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+
+                <div className={styles.unassignedList}>
+                  {seatingFilteredRows.slice(0, seatingLimit).map((row, i) => {
+                    const pCount = guestSeatCount(row);
+                    return (
+                      <div key={row.guestId || row.id || i} className={`${styles.unassignedItem} ${row.tableName ? styles.unassignedItemSeated : ''}`}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#222', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                            <span>{row.name}</span>
+                            {row.group && <span className={styles.groupBadge} style={{ marginLeft: 0, fontSize: '0.7rem', padding: '1px 6px' }}>{row.group}</span>}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#777', marginTop: 2 }}>
+                            {row.attending === 'yes' ? (
+                              <span style={{ color: '#2e7d32', fontWeight: 600 }}>Đi {pCount} người</span>
+                            ) : (
+                              <span>Dự kiến {pCount} người</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <select
+                          className={`${styles.compactTableSelect} ${row.tableName ? styles.compactTableSelectActive : ''}`}
+                          value={row.tableName || ''}
+                          onChange={e => updateGuestGift(row, { tableName: e.target.value })}
+                        >
+                          <option value="">+ Chọn mâm...</option>
+                          {allTableNames.map(tName => {
+                            const load = tableLoadMap[tName] || 0;
+                            return (
+                              <option key={tName} value={tName}>
+                                {tName} ({load}/{seatsPerTable})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    );
+                  })}
+
+                  {!seatingFilteredRows.length && (
+                    <div style={{ textAlign: 'center', color: '#999', padding: '28px 12px', fontSize: '0.85rem' }}>
+                      {seatingAssignFilter === 'unassigned'
+                        ? '🎉 Tất cả khách đã được xếp vào mâm!'
+                        : 'Không tìm thấy khách nào phù hợp.'}
+                    </div>
+                  )}
+
+                  {seatingFilteredRows.length > seatingLimit && (
+                    <button
+                      type="button"
+                      className={styles.buttonSecondary}
+                      style={{ width: '100%', padding: '7px', fontSize: '0.8rem', marginTop: 6 }}
+                      onClick={() => setSeatingLimit(l => l + 50)}
+                    >
+                      + Xem thêm ({seatingFilteredRows.length - seatingLimit} khách)
+                    </button>
+                  )}
+                </div>
+              </aside>
+
+              {/* CỘT PHẢI: SƠ ĐỒ CÁC MÂM */}
+              <div className={styles.tablesPanel}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+                  <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#222' }}>
+                    Sơ Đồ Các Mâm ({allTableNames.length} mâm)
+                  </h2>
+                  <form onSubmit={handleAddTable} className={styles.noPrint} style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      className={styles.inlineInput}
+                      style={{ width: 200 }}
+                      placeholder={`VD: Mâm ${allTableNames.length + 1} - Bạn ĐH`}
+                      value={newTableName}
+                      onChange={e => setNewTableName(e.target.value)}
+                    />
+                    <button type="submit" className={styles.buttonPrimary} style={{ padding: '7px 14px', fontSize: '0.84rem', whiteSpace: 'nowrap' }}>
+                      + Thêm Mâm
+                    </button>
+                  </form>
+                </div>
+
+                <div className={styles.tablesGrid}>
+                  {allTableNames.map(tName => {
+                    const guestsInTable = tableGuestsMap[tName] || [];
+                    const seatedPeople = tableLoadMap[tName] || 0;
+                    const isFull = seatedPeople === seatsPerTable;
+                    const isOver = seatedPeople > seatsPerTable;
+                    const fillPct = Math.min(100, Math.round((seatedPeople / seatsPerTable) * 100));
+
+                    const cardStateClass = isOver
+                      ? styles.tableCardOver
+                      : isFull
+                      ? styles.tableCardFull
+                      : '';
+
+                    const capBadgeClass = isOver
+                      ? styles.capOver
+                      : isFull
+                      ? styles.capFull
+                      : styles.capAvailable;
+
+                    const capText = isOver
+                      ? `${seatedPeople}/${seatsPerTable} (Quá ${seatedPeople - seatsPerTable})`
+                      : isFull
+                      ? `${seatedPeople}/${seatsPerTable} (Đủ mâm)`
+                      : `${seatedPeople}/${seatsPerTable} người`;
+
+                    return (
+                      <div key={tName} className={`${styles.tableCard} ${cardStateClass}`}>
+                        <div className={styles.tableCardHeader}>
+                          <div className={styles.tableCardTitle}>
+                            <span>🍽️ {tName}</span>
+                            <button
+                              type="button"
+                              className={styles.iconBtn}
+                              style={{ padding: '2px 5px', fontSize: '0.72rem', border: 'none', background: 'transparent' }}
+                              title="Đổi tên mâm này"
+                              onClick={() => handleRenameTable(tName)}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.iconBtn}
+                              style={{ padding: '2px 5px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#c62828' }}
+                              title={guestsInTable.length > 0 ? 'Gỡ khách & xóa mâm này' : 'Xóa mâm trống này'}
+                              onClick={() => handleDeleteOrClearTable(tName, guestsInTable.length)}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                          <span className={`${styles.tableCapacityBadge} ${capBadgeClass}`}>
+                            {capText}
+                          </span>
+                        </div>
+
+                        <div className={styles.progressBarTrack} style={{ height: 5, marginTop: 0 }}>
+                          <div
+                            className={styles.progressBarFill}
+                            style={{
+                              width: `${fillPct}%`,
+                              background: isOver ? '#e53935' : isFull ? '#2e7d32' : '#C5A880'
+                            }}
+                          />
+                        </div>
+
+                        <div className={styles.tableGuestList}>
+                          {guestsInTable.length === 0 ? (
+                            <div style={{ color: '#aaa', fontSize: '0.8rem', textAlign: 'center', padding: '18px 8px', border: '1px dashed #eee', borderRadius: 8 }}>
+                              Mâm đang trống
+                            </div>
+                          ) : (
+                            guestsInTable.map((g, idx) => {
+                              const pCount = guestSeatCount(g);
+                              return (
+                                <div key={g.guestId || g.id || idx} className={styles.tableGuestItem}>
+                                  <div style={{ minWidth: 0, flex: 1, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                                    <strong style={{ color: '#333', fontSize: '0.86rem' }}>{idx + 1}. {g.name}</strong>
+                                    {g.group && <span className={styles.groupBadge} style={{ marginLeft: 0, fontSize: '0.68rem', padding: '1px 5px' }}>{g.group}</span>}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                                    <span style={{ fontSize: '0.75rem', color: g.attending === 'yes' ? '#2e7d32' : '#777', fontWeight: 600 }}>
+                                      {pCount} người
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className={styles.tableRemoveBtn}
+                                      title="Gỡ khách này khỏi mâm"
+                                      onClick={() => updateGuestGift(g, { tableName: '' })}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Dropdown thêm nhanh khách chưa xếp mâm vào mâm này */}
+                        {unseatedEventRows.length > 0 && (
+                          <div className={styles.noPrint} style={{ marginTop: 'auto', paddingTop: 6 }}>
+                            <select
+                              className={styles.inlineSelect}
+                              style={{ width: '100%', padding: '6px 8px', background: '#fdfaf5', borderColor: '#e2d1b8', fontSize: '0.8rem', color: '#6b5335' }}
+                              value=""
+                              onChange={e => {
+                                const targetId = e.target.value;
+                                if (!targetId) return;
+                                const targetRow = unseatedEventRows.find(r => (r.guestId || r.id) === targetId);
+                                if (targetRow) {
+                                  updateGuestGift(targetRow, { tableName: tName });
+                                }
+                              }}
+                            >
+                              <option value="">+ Thêm khách vào {tName}...</option>
+                              {unseatedEventRows.map(u => (
+                                <option key={u.guestId || u.id} value={u.guestId || u.id}>
+                                  {u.name} ({guestSeatCount(u)} người{u.group ? ` • ${u.group}` : ''})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB MỚI: SỔ TIỀN MỪNG & QUÀ CƯỚI (GÓI A) */}
+        {/* TAB MỚI: SỔ TIỀN MỪNG & QUÀ CƯỚI (GIAO DIỆN TỐI GIẢN, GỌN MẮT) */}
         {activeTab === 'gifts' && (
           <div>
-            <div className={styles.header}>
+            <div className={styles.header} style={{ marginBottom: 18 }}>
               <div>
                 <h1 className={styles.pageTitle}>💰 Sổ Tiền Mừng & Quà Cưới</h1>
-                <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.9rem' }}>
-                  Nhập số tiền mừng 1 chạm, phân loại Tiền mặt / Chuyển khoản / Vàng và tự động lưu ngay lập tức.
+                <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.88rem' }}>
+                  Bấm vào ô số tiền của khách để hiện gợi ý mệnh giá nhanh (Tự động lưu ngay lập tức).
                 </p>
               </div>
-              <div className={styles.headerActions}>
+              <div className={styles.headerActions} style={{ flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={styles.buttonPrimary}
+                  style={{ padding: '8px 14px', fontSize: '0.85rem' }}
+                  onClick={() => setShowWalkInForm(v => !v)}
+                >
+                  {showWalkInForm ? '✕ Đóng form khách phát sinh' : '+ Thêm phong bì phát sinh'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.buttonSecondary}
+                  style={{ padding: '8px 14px', fontSize: '0.85rem' }}
+                  onClick={() => setShowGiftGroupStats(v => !v)}
+                >
+                  📊 {showGiftGroupStats ? 'Ẩn thống kê nhóm' : 'Thống kê theo nhóm'}
+                </button>
                 <button
                   type="button"
                   className={`${styles.privacyBtn} ${hideMoney ? styles.privacyBtnActive : ''}`}
                   onClick={togglePrivacy}
                   title="Ẩn/Hiện số tiền để tránh người bên cạnh nhìn thấy"
                 >
-                  {hideMoney ? '🙈 Đang ẩn số tiền (Bấm để hiện)' : '👁️ Ẩn số tiền'}
+                  {hideMoney ? '🙈 Đang ẩn tiền' : '👁️ Ẩn số tiền'}
                 </button>
                 <button
                   type="button"
                   className={styles.buttonSecondary}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.85rem' }}
                   onClick={() => {
                     const url = URL.createObjectURL(new Blob([giftCsvFor(giftRows)], { type: 'text/csv;charset=utf-8' }));
                     const a = document.createElement('a');
@@ -1715,197 +1668,182 @@ export default function AdminPage() {
                     a.click();
                   }}
                 >
-                  <Icon icon={Download} size={16} /> Xuất Sổ Tiền Mừng ({giftRows.length})
+                  <Icon icon={Download} size={16} /> Xuất Excel ({giftRows.length})
                 </button>
               </div>
             </div>
 
-            {/* 4 Thẻ Tổng thu Tiền mừng */}
-            <div className={styles.statsGrid}>
+            {/* Thanh tóm tắt 4 chỉ số Tiền mừng gọn gàng (Bấm để lọc nhanh) */}
+            <div className={styles.compactGiftStats}>
               <div
-                className={`${styles.statCard} ${styles.highlight} ${styles.clickableCard}`}
+                className={`${styles.compactGiftCard} ${giftFilterMethod === 'gifted' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'gifted' ? 'all' : 'gifted')}
               >
-                <h3 style={{ fontSize: '1.85rem', color: '#2e7d32' }}>{formatVND(totalGiftMoney)}</h3>
-                <p>Tổng tiền mừng thu được</p>
-                <span style={{ fontSize: '0.82rem', color: '#666' }}>
-                  Đã ghi nhận: <strong>{giftedRows.length} / {allRows.length}</strong> khách
-                </span>
-                <span className={styles.cardHint}>👉 Bấm để lọc những khách đã mừng</span>
+                <span className={styles.compactGiftLabel}>Tổng thu ({giftedRows.length}/{allRows.length} khách)</span>
+                <strong style={{ color: '#2e7d32', fontSize: '1.35rem' }}>{formatVND(totalGiftMoney)}</strong>
               </div>
 
               <div
-                className={`${styles.statCard} ${styles.clickableCard}`}
+                className={`${styles.compactGiftCard} ${giftFilterMethod === 'cash' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'cash' ? 'all' : 'cash')}
               >
-                <h3 style={{ fontSize: '1.75rem', color: '#2e7d32' }}>{formatVND(totalCashMoney)}</h3>
-                <p>💵 Tiền mặt (Phong bì)</p>
-                <span style={{ fontSize: '0.82rem', color: '#666' }}>
-                  Số lượng: <strong>{cashRows.length} phong bì</strong>
-                </span>
-                <span className={styles.cardHint}>👉 Bấm để đối chiếu tiền mặt trong thùng</span>
+                <span className={styles.compactGiftLabel}>💵 Tiền mặt ({cashRows.length} phong bì)</span>
+                <strong style={{ color: '#2e7d32', fontSize: '1.2rem' }}>{formatVND(totalCashMoney)}</strong>
               </div>
 
               <div
-                className={`${styles.statCard} ${styles.clickableCard}`}
+                className={`${styles.compactGiftCard} ${giftFilterMethod === 'transfer' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'transfer' ? 'all' : 'transfer')}
               >
-                <h3 style={{ fontSize: '1.75rem', color: '#1565c0' }}>{formatVND(totalTransferMoney)}</h3>
-                <p>🏦 Chuyển khoản (QR Bank)</p>
-                <span style={{ fontSize: '0.82rem', color: '#666' }}>
-                  Số lượng: <strong>{transferRows.length} lượt CK</strong>
-                </span>
-                <span className={styles.cardHint}>👉 Bấm để đối chiếu sao kê ngân hàng</span>
+                <span className={styles.compactGiftLabel}>🏦 Chuyển khoản ({transferRows.length} CK)</span>
+                <strong style={{ color: '#1565c0', fontSize: '1.2rem' }}>{formatVND(totalTransferMoney)}</strong>
               </div>
 
               <div
-                className={`${styles.statCard} ${styles.clickableCard}`}
+                className={`${styles.compactGiftCard} ${giftFilterMethod === 'gold' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'gold' ? 'all' : 'gold')}
               >
-                <h3 style={{ fontSize: '1.75rem', color: '#f57f17' }}>{goldRows.length} phần quà</h3>
-                <p>💍 Vàng & Quà Hiện Vật</p>
-                <span style={{ fontSize: '0.8rem', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {goldRows.length > 0 ? goldRows.map(r => `${r.name} (${r.giftNote || 'Vàng'})`).slice(0, 2).join(', ') : 'Chưa ghi nhận quà vàng'}
-                </span>
-                <span className={styles.cardHint}>👉 Bấm để xem danh sách mừng vàng/quà</span>
+                <span className={styles.compactGiftLabel}>💍 Vàng & Quà hiện vật</span>
+                <strong style={{ color: '#f57f17', fontSize: '1.2rem' }}>{goldRows.length} phần quà</strong>
               </div>
             </div>
 
-            {/* Thống kê tiền mừng theo Nhóm & Tiệc */}
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>
-                <span>Thống kê Tiền mừng theo Nhóm khách & Tiệc</span>
-                {(giftFilterGroup !== 'all' || giftFilterEvent !== 'all' || giftFilterMethod !== 'all') && (
-                  <button
-                    type="button"
-                    className={styles.buttonSecondary}
-                    style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                    onClick={() => { setGiftFilterGroup('all'); setGiftFilterEvent('all'); setGiftFilterMethod('all'); }}
-                  >
-                    ✕ Xóa bộ lọc đang chọn
-                  </button>
-                )}
-              </h2>
-              <div className={styles.giftMiniGrid}>
-                {availableGroups.map(grp => {
-                  const grpRows = allRows.filter(r => r.group === grp);
-                  if (!grpRows.length) return null;
-                  const grpGifted = grpRows.filter(r => r.hasGift).length;
-                  const grpSum = grpRows.reduce((s, r) => s + Number(r.giftAmount || 0), 0);
-                  const active = giftFilterGroup === grp;
-                  return (
-                    <div
-                      key={grp}
-                      className={`${styles.giftMiniCard} ${active ? styles.giftMiniCardActive : ''}`}
-                      onClick={() => setGiftFilterGroup(active ? 'all' : grp)}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <strong style={{ fontSize: '0.92rem', color: '#333' }}>{grp}</strong>
-                        <span style={{ fontSize: '0.75rem', color: '#777' }}>{grpGifted}/{grpRows.length} khách</span>
-                      </div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2e7d32' }}>
-                        {formatVND(grpSum)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Thêm nhanh phong bì khách phát sinh ngoài danh sách Link */}
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>
-                <span>+ Thêm nhanh phong bì phát sinh (Khách của Bố Mẹ / Khách ngoài danh sách Link)</span>
-                <span style={{ fontSize: '0.8rem', color: '#2e7d32', fontWeight: 500 }}>✓ Tự động lưu ngay</span>
-              </h2>
-              <form onSubmit={addWalkInGift}>
-                <div className={styles.walkInFormGrid}>
-                  <div>
-                    <input
-                      className={styles.input}
-                      style={{ padding: '9px 12px', fontSize: '0.9rem' }}
-                      placeholder="Tên người mừng (VD: Bác Hùng bạn Bố) *"
-                      value={walkInName}
-                      onChange={e => setWalkInName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <select className={styles.select} style={{ padding: '9px 10px', fontSize: '0.9rem' }} value={walkInGroup} onChange={e => setWalkInGroup(e.target.value)}>
-                      {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <select className={styles.select} style={{ padding: '9px 10px', fontSize: '0.9rem' }} value={walkInEventId} onChange={e => setWalkInEventId(e.target.value)}>
-                      {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      step="10000"
-                      min="0"
-                      className={styles.input}
-                      style={{ padding: '9px 12px', fontSize: '0.9rem', fontWeight: 700, color: '#2e7d32' }}
-                      placeholder="Số tiền (VNĐ)"
-                      value={walkInAmount}
-                      onChange={e => setWalkInAmount(e.target.value)}
-                    />
-                    <div className={styles.presetGroup}>
-                      {QUICK_AMOUNTS.map(p => (
-                        <button
-                          key={p.value}
-                          type="button"
-                          className={`${styles.presetChip} ${Number(walkInAmount) === p.value ? styles.presetChipActive : ''}`}
-                          onClick={() => setWalkInAmount(String(p.value))}
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <select className={styles.select} style={{ padding: '9px 10px', fontSize: '0.9rem' }} value={walkInMethod} onChange={e => setWalkInMethod(e.target.value)}>
-                      <option value="cash">💵 Tiền mặt</option>
-                      <option value="transfer">🏦 Chuyển khoản</option>
-                      <option value="gold">💍 Vàng / Quà</option>
-                    </select>
-                  </div>
-                  <div>
-                    <input
-                      className={styles.input}
-                      style={{ padding: '9px 12px', fontSize: '0.9rem' }}
-                      placeholder="Ghi chú (VD: 1 chỉ vàng / Gửi hộ)"
-                      value={walkInNote}
-                      onChange={e => setWalkInNote(e.target.value)}
-                    />
-                  </div>
-                  <button type="submit" className={styles.buttonPrimary} style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
-                    + Lưu phong bì
-                  </button>
+            {/* Khối thống kê theo nhóm (Chỉ mở khi bấm nút) */}
+            {showGiftGroupStats && (
+              <div className={styles.card} style={{ padding: '16px 20px', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <strong style={{ fontSize: '0.95rem', color: '#333' }}>📊 Thống kê Tiền mừng theo Nhóm khách (Bấm vào nhóm để lọc)</strong>
+                  {giftFilterGroup !== 'all' && (
+                    <button type="button" className={styles.buttonSecondary} style={{ padding: '3px 10px', fontSize: '0.78rem' }} onClick={() => setGiftFilterGroup('all')}>
+                      ✕ Bỏ lọc nhóm
+                    </button>
+                  )}
                 </div>
-              </form>
-            </div>
+                <div className={styles.giftMiniGrid}>
+                  {availableGroups.map(grp => {
+                    const grpRows = allRows.filter(r => r.group === grp);
+                    if (!grpRows.length) return null;
+                    const grpGifted = grpRows.filter(r => r.hasGift).length;
+                    const grpSum = grpRows.reduce((s, r) => s + Number(r.giftAmount || 0), 0);
+                    const active = giftFilterGroup === grp;
+                    return (
+                      <div
+                        key={grp}
+                        className={`${styles.giftMiniCard} ${active ? styles.giftMiniCardActive : ''}`}
+                        onClick={() => setGiftFilterGroup(active ? 'all' : grp)}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <strong style={{ fontSize: '0.88rem', color: '#333' }}>{grp}</strong>
+                          <span style={{ fontSize: '0.74rem', color: '#777' }}>{grpGifted}/{grpRows.length}</span>
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#2e7d32' }}>
+                          {formatVND(grpSum)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-            {/* Bảng nhập và tra cứu Sổ Tiền Mừng */}
+            {/* Form thêm nhanh phong bì phát sinh (Chỉ mở khi bấm nút "+ Thêm phong bì phát sinh") */}
+            {showWalkInForm && (
+              <div className={styles.card} style={{ padding: '18px 20px', marginBottom: 16, background: '#fdfaf5', borderColor: '#e2d1b8' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <strong style={{ fontSize: '0.95rem', color: '#59472d' }}>
+                    + Thêm nhanh phong bì phát sinh (Khách của Bố Mẹ / Ngoài danh sách Link)
+                  </strong>
+                  <span style={{ fontSize: '0.78rem', color: '#2e7d32', fontWeight: 600 }}>✓ Tự động lưu ngay</span>
+                </div>
+                <form onSubmit={addWalkInGift}>
+                  <div className={styles.walkInFormGrid}>
+                    <div>
+                      <input
+                        className={styles.input}
+                        style={{ padding: '8px 12px', fontSize: '0.88rem' }}
+                        placeholder="Tên người mừng (VD: Bác Hùng bạn Bố) *"
+                        value={walkInName}
+                        onChange={e => setWalkInName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <select className={styles.select} style={{ padding: '8px 10px', fontSize: '0.88rem' }} value={walkInGroup} onChange={e => setWalkInGroup(e.target.value)}>
+                        {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <select className={styles.select} style={{ padding: '8px 10px', fontSize: '0.88rem' }} value={walkInEventId} onChange={e => setWalkInEventId(e.target.value)}>
+                        {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        step="10000"
+                        min="0"
+                        className={styles.input}
+                        style={{ padding: '8px 12px', fontSize: '0.88rem', fontWeight: 700, color: '#2e7d32' }}
+                        placeholder="Số tiền (VNĐ)"
+                        value={walkInAmount}
+                        onChange={e => setWalkInAmount(e.target.value)}
+                      />
+                      <div className={styles.presetGroup}>
+                        {QUICK_AMOUNTS.map(p => (
+                          <button
+                            key={p.value}
+                            type="button"
+                            className={`${styles.presetChip} ${Number(walkInAmount) === p.value ? styles.presetChipActive : ''}`}
+                            onClick={() => setWalkInAmount(String(p.value))}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <select className={styles.select} style={{ padding: '8px 10px', fontSize: '0.88rem' }} value={walkInMethod} onChange={e => setWalkInMethod(e.target.value)}>
+                        <option value="cash">💵 Tiền mặt</option>
+                        <option value="transfer">🏦 Chuyển khoản</option>
+                        <option value="gold">💍 Vàng / Quà</option>
+                      </select>
+                    </div>
+                    <div>
+                      <input
+                        className={styles.input}
+                        style={{ padding: '8px 12px', fontSize: '0.88rem' }}
+                        placeholder="Ghi chú (VD: 1 chỉ vàng)"
+                        value={walkInNote}
+                        onChange={e => setWalkInNote(e.target.value)}
+                      />
+                    </div>
+                    <button type="submit" className={styles.buttonPrimary} style={{ padding: '9px 16px', whiteSpace: 'nowrap' }}>
+                      + Lưu
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Bảng nhập và tra cứu Sổ Tiền Mừng tinh gọn */}
             <div className={styles.card}>
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
                 <input
                   className={styles.input}
-                  style={{ flex: '1 1 220px' }}
+                  style={{ flex: '1 1 220px', padding: '9px 14px' }}
                   placeholder="🔍 Tìm tên khách, nhóm hoặc ghi chú quà..."
                   value={giftSearch}
                   onChange={e => { setGiftSearch(e.target.value); setGiftLimit(50); }}
                 />
-                <select className={styles.select} style={{ width: '165px' }} value={giftFilterGroup} onChange={e => { setGiftFilterGroup(e.target.value); setGiftLimit(50); }}>
+                <select className={styles.select} style={{ width: '160px', padding: '9px 12px' }} value={giftFilterGroup} onChange={e => { setGiftFilterGroup(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Tất cả nhóm</option>
                   {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select className={styles.select} style={{ width: '165px' }} value={giftFilterEvent} onChange={e => { setGiftFilterEvent(e.target.value); setGiftLimit(50); }}>
+                <select className={styles.select} style={{ width: '160px', padding: '9px 12px' }} value={giftFilterEvent} onChange={e => { setGiftFilterEvent(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Tất cả tiệc</option>
                   {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
-                <select className={styles.select} style={{ width: '185px' }} value={giftFilterMethod} onChange={e => { setGiftFilterMethod(e.target.value); setGiftLimit(50); }}>
+                <select className={styles.select} style={{ width: '180px', padding: '9px 12px' }} value={giftFilterMethod} onChange={e => { setGiftFilterMethod(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Mọi trạng thái mừng</option>
                   <option value="gifted">✓ Đã mừng ({giftedRows.length})</option>
                   <option value="ungifted">⏳ Chưa ghi nhận ({allRows.length - giftedRows.length})</option>
@@ -1920,14 +1858,16 @@ export default function AdminPage() {
                   <thead>
                     <tr>
                       <th>Khách mời & Nhóm</th>
-                      <th>Số tiền mừng (VNĐ) — Bấm chọn nhanh 1 chạm</th>
-                      <th>Hình thức mừng</th>
+                      <th>Số tiền mừng (VNĐ)</th>
+                      <th>Hình thức</th>
                       <th>Ghi chú trả lễ / Quà hiện vật</th>
-                      <th>Thao tác</th>
+                      <th style={{ width: 50 }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {giftRows.slice(0, giftLimit).map((row, i) => {
+                      const rowKey = row.guestId || row.id || `row-${i}`;
+                      const isRowActive = activeGiftRowKey === rowKey;
                       const amt = Number(row.giftAmount || 0);
                       const methodClass =
                         row.giftMethod === 'transfer' ? styles.methodTransfer :
@@ -1935,28 +1875,32 @@ export default function AdminPage() {
                         styles.methodCash;
 
                       return (
-                        <tr key={row.guestId || row.id || i} style={{ background: row.hasGift ? '#fafdf9' : undefined }}>
-                          <td style={{ minWidth: 190 }}>
+                        <tr
+                          key={rowKey}
+                          style={{ background: row.hasGift ? '#fafdf9' : undefined }}
+                          onClick={() => setActiveGiftRowKey(rowKey)}
+                        >
+                          <td style={{ minWidth: 180, padding: '12px 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
                               <strong>{row.name}</strong>
                               {row.group && <span className={styles.groupBadge}>{row.group}</span>}
                             </div>
-                            <div style={{ fontSize: '0.78rem', color: '#777', marginTop: 3 }}>
+                            <div style={{ fontSize: '0.76rem', color: '#888', marginTop: 2 }}>
                               {row.location} •{' '}
                               {row.attending === 'yes' ? (
                                 <span style={{ color: '#2e7d32', fontWeight: 600 }}>Đi {row.count || 1} người</span>
                               ) : row.attending === 'no' ? (
                                 <span style={{ color: '#c62828' }}>Báo vắng</span>
                               ) : (
-                                <span>Chờ phản hồi</span>
+                                <span>Chờ RSVP</span>
                               )}
                             </div>
                           </td>
 
-                          <td style={{ minWidth: 310 }}>
+                          <td style={{ minWidth: 240, padding: '12px 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               {hideMoney ? (
-                                <span style={{ fontWeight: 700, color: amt > 0 ? '#2e7d32' : '#999', fontSize: '0.95rem', minWidth: 130 }}>
+                                <span style={{ fontWeight: 700, color: amt > 0 ? '#2e7d32' : '#999', fontSize: '0.92rem' }}>
                                   {amt > 0 ? '•••,••• đ' : 'Chưa nhập'}
                                 </span>
                               ) : (
@@ -1965,8 +1909,9 @@ export default function AdminPage() {
                                   step="50000"
                                   min="0"
                                   className={styles.moneyInput}
-                                  placeholder="0 đ"
+                                  placeholder="Bấm nhập số tiền..."
                                   value={amt > 0 ? amt : ''}
+                                  onFocus={() => setActiveGiftRowKey(rowKey)}
                                   onChange={e => {
                                     const val = Math.max(0, Number(e.target.value) || 0);
                                     updateGuestGift(row, { giftAmount: val }, 800);
@@ -1975,64 +1920,76 @@ export default function AdminPage() {
                               )}
                               {!hideMoney && amt > 0 && (
                                 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2e7d32', whiteSpace: 'nowrap' }}>
-                                  = {amt.toLocaleString('vi-VN')} đ
+                                  {amt.toLocaleString('vi-VN')} đ
                                 </span>
                               )}
                             </div>
-                            <div className={styles.presetGroup}>
-                              {QUICK_AMOUNTS.map(preset => (
-                                <button
-                                  key={preset.value}
-                                  type="button"
-                                  className={`${styles.presetChip} ${amt === preset.value ? styles.presetChipActive : ''}`}
-                                  onClick={() => updateGuestGift(row, { giftAmount: preset.value })}
-                                >
-                                  {preset.label}
-                                </button>
-                              ))}
-                              {amt > 0 && (
-                                <button
-                                  type="button"
-                                  className={styles.presetChipClear}
-                                  title="Xóa số tiền về 0"
-                                  onClick={() => updateGuestGift(row, { giftAmount: 0 })}
-                                >
-                                  ✕ 0đ
-                                </button>
-                              )}
-                            </div>
+
+                            {/* Chỉ hiển thị dải nút mệnh giá nhanh ở dòng đang chọn */}
+                            {isRowActive && !hideMoney && (
+                              <div className={styles.presetGroup} style={{ marginTop: 6 }}>
+                                {QUICK_AMOUNTS.map(preset => (
+                                  <button
+                                    key={preset.value}
+                                    type="button"
+                                    className={`${styles.presetChip} ${amt === preset.value ? styles.presetChipActive : ''}`}
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      updateGuestGift(row, { giftAmount: preset.value });
+                                      setActiveGiftRowKey(null);
+                                    }}
+                                  >
+                                    {preset.label}
+                                  </button>
+                                ))}
+                                {amt > 0 && (
+                                  <button
+                                    type="button"
+                                    className={styles.presetChipClear}
+                                    title="Xóa số tiền về 0"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      updateGuestGift(row, { giftAmount: 0 });
+                                      setActiveGiftRowKey(null);
+                                    }}
+                                  >
+                                    ✕ 0đ
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </td>
 
-                          <td style={{ minWidth: 150 }}>
+                          <td style={{ minWidth: 140, padding: '12px 16px' }}>
                             <select
                               className={`${styles.methodSelect} ${row.hasGift ? methodClass : ''}`}
                               value={row.giftMethod || 'cash'}
                               onChange={e => updateGuestGift(row, { giftMethod: e.target.value })}
                             >
-                              <option value="cash">💵 Phong bì (Mặt)</option>
+                              <option value="cash">💵 Tiền mặt</option>
                               <option value="transfer">🏦 Chuyển khoản</option>
-                              <option value="gold">💍 Vàng / Hiện vật</option>
+                              <option value="gold">💍 Vàng / Quà</option>
                             </select>
                           </td>
 
-                          <td style={{ minWidth: 220 }}>
+                          <td style={{ minWidth: 200, padding: '12px 16px' }}>
                             <input
                               type="text"
                               className={styles.giftNoteInput}
-                              placeholder="VD: 1 chỉ vàng / Trước mình mừng 1M..."
+                              placeholder="Ghi chú (VD: 1 chỉ vàng...)"
                               value={row.giftNote || ''}
+                              onFocus={() => setActiveGiftRowKey(rowKey)}
                               onChange={e => updateGuestGift(row, { giftNote: e.target.value }, 800)}
                             />
                           </td>
 
-                          <td>
+                          <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                             {row.guestId && (
                               <button
                                 type="button"
                                 title="Xóa khách này"
-                                className={`${styles.buttonSecondary} ${styles.buttonDanger}`}
-                                style={{ padding: '6px 10px' }}
-                                onClick={() => removeGuestLink(row.guestId)}
+                                className={styles.tableRemoveBtn}
+                                onClick={e => { e.stopPropagation(); removeGuestLink(row.guestId); }}
                               >
                                 <Icon icon={Trash2} size={14} />
                               </button>

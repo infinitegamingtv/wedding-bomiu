@@ -807,3 +807,167 @@
     overflow: visible !important;
   }
 }
+
+
+/* Clean Split-View Seating Chart & Decluttered Gift Registry Styles */
+.compactToolbar {
+  background: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.summaryPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.summaryPill {
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 0.82rem;
+  background: #f5f5f5;
+  color: #444;
+  border: 1px solid #e0e0e0;
+}
+.summaryPillSuccess {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #c8e6c9;
+}
+.summaryPillWarn {
+  background: #fff8e1;
+  color: #b26a00;
+  border-color: #ffe082;
+}
+.seatingWorkspace {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .seatingWorkspace {
+    grid-template-columns: 1fr;
+  }
+}
+.unassignedPanel {
+  background: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 16px;
+  padding: 16px;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+@media (max-width: 980px) {
+  .unassignedPanel {
+    position: static;
+    max-height: 420px;
+  }
+}
+.unassignedList {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+  flex: 1;
+}
+.unassignedItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.unassignedItem:hover {
+  border-color: #C5A880;
+  background: #fdfaf5;
+}
+.unassignedItemSeated {
+  background: #fafdf9;
+  border-color: #dcedc8;
+}
+.compactTableSelect {
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid #d8c3a5;
+  background: #fff;
+  color: #59472d;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 132px;
+}
+.compactTableSelectActive {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+.miniFilterBtn {
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  background: #f9f9f9;
+  color: #666;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.miniFilterBtnActive {
+  background: #C5A880;
+  color: #fff;
+  border-color: #C5A880;
+}
+.tablesPanel {
+  background: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+.compactGiftStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.compactGiftCard {
+  background: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.compactGiftCard:hover {
+  border-color: #C5A880;
+  background: #fdfaf5;
+}
+.compactGiftCardActive {
+  border-color: #C5A880;
+  background: #fdfaf5;
+  box-shadow: 0 2px 10px rgba(197, 168, 128, 0.2);
+}
+.compactGiftLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+}
