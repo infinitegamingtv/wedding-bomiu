@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './admin.module.css';
 import EventEditor from '@/components/EventEditor';
 import { guestRows, csvFor, giftCsvFor, seatingCsvFor } from '@/lib/wedding';
-import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle, Copy, Check, Heart } from 'lucide';
+import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle, Copy, Check, Heart, Utensils, Wallet, Pencil } from 'lucide';
 import { MorphIcon } from 'morphicons/react';
 
 const Icon = ({ icon, size = 18, ...props }) => <MorphIcon icon={icon} size={size} {...props} />;
@@ -845,10 +845,10 @@ export default function AdminPage() {
             <span style={{display: 'inline-flex', width: 20}}><Icon icon={Users} size={18} /></span> Khách & RSVP
           </button>
           <button className={`${styles.navItem} ${activeTab === 'seating' ? styles.active : ''}`} onClick={() => setActiveTab('seating')}>
-            <span style={{display: 'inline-flex', width: 20}}>🍽️</span> Xếp Mâm / Bàn
+            <span style={{display: 'inline-flex', width: 20}}><Icon icon={Utensils} size={18} /></span> Xếp Mâm / Bàn
           </button>
           <button className={`${styles.navItem} ${activeTab === 'gifts' ? styles.active : ''}`} onClick={() => setActiveTab('gifts')}>
-            <span style={{display: 'inline-flex', width: 20}}>💰</span> Sổ Tiền Mừng
+            <span style={{display: 'inline-flex', width: 20}}><Icon icon={Wallet} size={18} /></span> Sổ Tiền Mừng
           </button>
           <button className={`${styles.navItem} ${activeTab === 'content' ? styles.active : ''}`} onClick={() => setActiveTab('content')}>
             <span style={{display: 'inline-flex', width: 20}}><Icon icon={PenTool} size={18} /></span> Nội dung thiệp
@@ -872,7 +872,7 @@ export default function AdminPage() {
             onClick={handleRefreshData}
             disabled={refreshing}
           >
-            {refreshing ? '⏳ Đang làm mới...' : '🔄 Làm mới phản hồi'}
+            {refreshing ? 'Đang làm mới...' : 'Làm mới phản hồi'}
           </button>
           <div style={{ display: 'flex', gap: '6px' }}>
             <button
@@ -882,7 +882,7 @@ export default function AdminPage() {
               onClick={handleBackupJson}
               title="Tải toàn bộ dữ liệu khách, lời chúc, sơ đồ mâm, tiền mừng về máy (.json)"
             >
-              📥 Sao lưu
+              Sao lưu
             </button>
             <button
               type="button"
@@ -891,7 +891,7 @@ export default function AdminPage() {
               onClick={() => restoreInputRef.current?.click()}
               title="Khôi phục toàn bộ dữ liệu từ file .json đã sao lưu"
             >
-              📤 Khôi phục
+              Khôi phục
             </button>
           </div>
           <a href="/" target="_blank" className={styles.buttonSecondary} style={{display: 'block', textAlign: 'center', textDecoration: 'none', fontSize: '0.88rem', padding: '8px 12px'}}>Xem thiệp &rarr;</a>
@@ -904,13 +904,13 @@ export default function AdminPage() {
         {autoSaveStatus !== 'idle' && (
           <div className={styles.noPrint} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
             {autoSaveStatus === 'saving' && (
-              <span className={`${styles.autoSaveBadge} ${styles.autoSaveSaving}`}>⏳ Đang tự động lưu...</span>
+              <span className={`${styles.autoSaveBadge} ${styles.autoSaveSaving}`}>Đang tự động lưu...</span>
             )}
             {autoSaveStatus === 'saved' && (
               <span className={`${styles.autoSaveBadge} ${styles.autoSaveSaved}`}>✓ Đã tự động lưu</span>
             )}
             {autoSaveStatus === 'error' && (
-              <span className={`${styles.autoSaveBadge} ${styles.autoSaveError}`}>⚠️ Lỗi tự động lưu — Hãy bấm Lưu thay đổi</span>
+              <span className={`${styles.autoSaveBadge} ${styles.autoSaveError}`}>Lỗi tự động lưu — Hãy bấm Lưu thay đổi</span>
             )}
           </div>
         )}
@@ -929,7 +929,7 @@ export default function AdminPage() {
                   disabled={refreshing}
                   title="Tải lại phản hồi (RSVP) & lời chúc mới nhất từ khách mà không cần F5"
                 >
-                  {refreshing ? '⏳ Đang tải...' : '🔄 Làm mới RSVP'}
+                  {refreshing ? 'Đang tải...' : 'Làm mới RSVP'}
                 </button>
                 <button
                   type="button"
@@ -937,14 +937,14 @@ export default function AdminPage() {
                   onClick={handleBackupJson}
                   title="Tải bản sao lưu dự phòng toàn bộ dữ liệu (.json)"
                 >
-                  🛡️ Sao lưu (.JSON)
+                  Sao lưu (.JSON)
                 </button>
                 <button
                   type="button"
                   className={`${styles.privacyBtn} ${hideMoney ? styles.privacyBtnActive : ''}`}
                   onClick={togglePrivacy}
                 >
-                  {hideMoney ? '🙈 Đang ẩn số tiền' : '👁️ Hiện số tiền'}
+                  {hideMoney ? 'Đang ẩn số tiền' : 'Ẩn số tiền'}
                 </button>
                 <div className={styles.seatsSelector}>
                   <span>Quy chuẩn mâm cỗ:</span>
@@ -973,8 +973,8 @@ export default function AdminPage() {
               >
                 <h3>{totalAttending}</h3>
                 <p>Khách tham dự</p>
-                <span className={styles.tableEstBadge}>🍽️ {formatTables(totalAttending)}</span>
-                <span className={styles.cardHint}>👉 Bấm xem chi tiết khách</span>
+                <span className={styles.tableEstBadge}>{formatTables(totalAttending)}</span>
+                <span className={styles.cardHint}>Xem chi tiết khách &rarr;</span>
               </div>
 
               <div 
@@ -991,7 +991,7 @@ export default function AdminPage() {
                   <div className={styles.progressBarFill} style={{ width: `${sentPercent}%` }} />
                 </div>
                 <span className={styles.cardHint}>
-                  {unsentLinksCount > 0 ? `👉 Còn ${unsentLinksCount} khách chưa gửi link` : '✓ Đã gửi đủ 100% khách'}
+                  {unsentLinksCount > 0 ? `Còn ${unsentLinksCount} khách chưa gửi link →` : '✓ Đã gửi đủ 100% khách'}
                 </span>
               </div>
 
@@ -1003,9 +1003,9 @@ export default function AdminPage() {
                 <h3 style={{ fontSize: '1.75rem', color: '#2e7d32' }}>{formatVND(totalGiftMoney)}</h3>
                 <p>Tổng tiền mừng ({giftedRows.length} phong bì)</p>
                 <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                  💵 Mặt: {formatVND(totalCashMoney)} • 🏦 CK: {formatVND(totalTransferMoney)}
+                  Mặt: {formatVND(totalCashMoney)} • CK: {formatVND(totalTransferMoney)}
                 </span>
-                <span className={styles.cardHint}>👉 Mở Sổ Tiền Mừng & nhập nhanh</span>
+                <span className={styles.cardHint}>Mở Sổ Tiền Mừng &rarr;</span>
               </div>
 
               <div 
@@ -1018,7 +1018,7 @@ export default function AdminPage() {
                   <span style={{ fontSize: '0.85rem', color: '#999' }}>Vắng: {totalDeclined}</span>
                 </div>
                 <p>Đang chờ phản hồi</p>
-                <span className={styles.cardHint}>👉 Bấm xem & copy link nhắc lịch</span>
+                <span className={styles.cardHint}>Xem & copy link nhắc lịch &rarr;</span>
               </div>
             </div>
             
@@ -1050,7 +1050,7 @@ export default function AdminPage() {
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                         <h4 style={{margin: 0, fontSize: '1.15rem', color: '#222'}}>{event.name}</h4>
-                        <span className={styles.tableEstBadge}>🍽️ ≈ {(evtAttending / seatsPerTable).toFixed(1).replace(/\.0$/, '')} bàn</span>
+                        <span className={styles.tableEstBadge}>≈ {(evtAttending / seatsPerTable).toFixed(1).replace(/\.0$/, '')} bàn</span>
                       </div>
 
                       <div
@@ -1065,7 +1065,7 @@ export default function AdminPage() {
                         style={{display: 'flex', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, color: '#666', fontSize: '0.88rem'}}
                         onClick={e => { e.stopPropagation(); setModalSearch(''); setGuestModal({ scope: event.id, tab: 'pending' }); }}
                       >
-                        <span>⏳ Chờ phản hồi:</span> 
+                        <span>Chờ phản hồi:</span> 
                         <strong>{pendingRows.length} khách</strong>
                       </div>
 
@@ -1081,7 +1081,7 @@ export default function AdminPage() {
                         style={{display: 'flex', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, color: '#2e7d32', fontSize: '0.88rem', background: '#f4fbf5', marginTop: 2}}
                         onClick={e => { e.stopPropagation(); setGiftFilterEvent(event.id); setActiveTab('gifts'); }}
                       >
-                        <span>💰 Tiền mừng ({evtGiftCount} khách):</span> 
+                        <span>Tiền mừng ({evtGiftCount} khách):</span> 
                         <strong>{formatVND(evtGiftMoney)}</strong>
                       </div>
 
@@ -1090,7 +1090,7 @@ export default function AdminPage() {
                         onClick={e => { e.stopPropagation(); setModalSearch(''); setGuestModal({ scope: event.id, tab: 'unsent' }); }}
                       >
                         <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
-                          <span>📨 Đã gửi thiệp:</span>
+                          <span>Đã gửi thiệp:</span>
                           <strong>{evtSentCount}/{evtLinkRows.length} ({evtSentPct}%)</strong>
                         </div>
                         <div className={styles.progressBarTrack} style={{height: 6, marginTop: 2}}>
@@ -1098,7 +1098,7 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      <span className={styles.cardHint} style={{marginTop: '10px'}}>👉 Bấm để mở danh sách & lọc chi tiết</span>
+                      <span className={styles.cardHint} style={{marginTop: '10px'}}>Mở danh sách & lọc chi tiết &rarr;</span>
                     </div>
                   );
                 })}
@@ -1189,7 +1189,7 @@ export default function AdminPage() {
                 <input
                   type="text"
                   className={styles.modalSearchInput}
-                  placeholder="🔍 Tìm nhanh tên khách hoặc nhóm trong danh sách này..."
+                  placeholder="Tìm nhanh tên khách hoặc nhóm trong danh sách này..."
                   value={modalSearch}
                   onChange={e => setModalSearch(e.target.value)}
                 />
@@ -1206,7 +1206,7 @@ export default function AdminPage() {
                           <div className={styles.guestName}>
                             {guest.name}
                             {guest.group && <span className={styles.groupBadge}>{guest.group}</span>}
-                            {guest.tableName && <span className={styles.tableBadge}>🍽️ {guest.tableName}</span>}
+                            {guest.tableName && <span className={styles.tableBadge}>{guest.tableName}</span>}
                           </div>
                           <div className={styles.guestMeta}>
                             {guest.location && <span>Tiệc: <strong>{guest.location}</strong> • </span>}
@@ -1267,7 +1267,7 @@ export default function AdminPage() {
           <div>
             <div className={styles.header} style={{ marginBottom: 18 }}>
               <div>
-                <h1 className={styles.pageTitle}>🍽️ Sơ Đồ Xếp Mâm / Bàn Tiệc</h1>
+                <h1 className={styles.pageTitle}>Sơ Đồ Xếp Mâm / Bàn Tiệc</h1>
                 <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.88rem' }}>
                   Chọn khách từ cột bên trái để đưa vào các mâm bên phải (Tự động lưu ngay lập tức).
                 </p>
@@ -1295,7 +1295,7 @@ export default function AdminPage() {
                   onClick={handleAutoPackTables}
                   title="Tự động chia các khách chưa có mâm vào các bàn theo từng Nhóm"
                 >
-                  ⚡ Tự động xếp mâm
+                  Tự động xếp mâm
                 </button>
                 <button
                   type="button"
@@ -1303,7 +1303,7 @@ export default function AdminPage() {
                   onClick={() => window.print()}
                   title="In sơ đồ các mâm ra giấy A4 hoặc lưu file PDF để đưa cho lễ tân dẫn khách"
                 >
-                  🖨️ In Sơ Đồ (A4)
+                  In Sơ Đồ (A4)
                 </button>
                 <button
                   type="button"
@@ -1360,7 +1360,7 @@ export default function AdminPage() {
                   ✓ Đã xếp: <strong>{totalSeatedPeople} người</strong> ({seatedEventRows.length} khách)
                 </span>
                 <span className={`${styles.summaryPill} ${totalUnseatedPeople > 0 ? styles.summaryPillWarn : styles.summaryPillSuccess}`}>
-                  ⏳ Chưa xếp: <strong>{totalUnseatedPeople} người</strong> ({unseatedEventRows.length} khách)
+                  Chưa xếp: <strong>{totalUnseatedPeople} người</strong> ({unseatedEventRows.length} khách)
                 </span>
               </div>
             </div>
@@ -1394,7 +1394,7 @@ export default function AdminPage() {
                 <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                   <input
                     className={styles.inlineInput}
-                    placeholder="🔍 Tìm tên khách..."
+                    placeholder="Tìm tên khách..."
                     value={seatingSearch}
                     onChange={e => { setSeatingSearch(e.target.value); setSeatingLimit(50); }}
                   />
@@ -1450,7 +1450,7 @@ export default function AdminPage() {
                   {!seatingFilteredRows.length && (
                     <div style={{ textAlign: 'center', color: '#999', padding: '28px 12px', fontSize: '0.85rem' }}>
                       {seatingAssignFilter === 'unassigned'
-                        ? '🎉 Tất cả khách đã được xếp vào mâm!'
+                        ? '✓ Tất cả khách đã được xếp vào mâm!'
                         : 'Không tìm thấy khách nào phù hợp.'}
                     </div>
                   )}
@@ -1519,24 +1519,24 @@ export default function AdminPage() {
                       <div key={tName} className={`${styles.tableCard} ${cardStateClass}`}>
                         <div className={styles.tableCardHeader}>
                           <div className={styles.tableCardTitle}>
-                            <span>🍽️ {tName}</span>
+                            <span>{tName}</span>
                             <button
                               type="button"
                               className={styles.iconBtn}
-                              style={{ padding: '2px 5px', fontSize: '0.72rem', border: 'none', background: 'transparent' }}
+                              style={{ padding: '3px 5px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#666' }}
                               title="Đổi tên mâm này"
                               onClick={() => handleRenameTable(tName)}
                             >
-                              ✏️
+                              <Icon icon={Pencil} size={13} />
                             </button>
                             <button
                               type="button"
                               className={styles.iconBtn}
-                              style={{ padding: '2px 5px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#c62828' }}
+                              style={{ padding: '3px 5px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#c62828' }}
                               title={guestsInTable.length > 0 ? 'Gỡ khách & xóa mâm này' : 'Xóa mâm trống này'}
                               onClick={() => handleDeleteOrClearTable(tName, guestsInTable.length)}
                             >
-                              🗑️
+                              <Icon icon={Trash2} size={13} />
                             </button>
                           </div>
                           <span className={`${styles.tableCapacityBadge} ${capBadgeClass}`}>
@@ -1626,7 +1626,7 @@ export default function AdminPage() {
           <div>
             <div className={styles.header} style={{ marginBottom: 18 }}>
               <div>
-                <h1 className={styles.pageTitle}>💰 Sổ Tiền Mừng & Quà Cưới</h1>
+                <h1 className={styles.pageTitle}>Sổ Tiền Mừng & Quà Cưới</h1>
                 <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.88rem' }}>
                   Bấm vào ô số tiền của khách để hiện gợi ý mệnh giá nhanh (Tự động lưu ngay lập tức).
                 </p>
@@ -1646,7 +1646,7 @@ export default function AdminPage() {
                   style={{ padding: '8px 14px', fontSize: '0.85rem' }}
                   onClick={() => setShowGiftGroupStats(v => !v)}
                 >
-                  📊 {showGiftGroupStats ? 'Ẩn thống kê nhóm' : 'Thống kê theo nhóm'}
+                  {showGiftGroupStats ? 'Ẩn thống kê nhóm' : 'Thống kê theo nhóm'}
                 </button>
                 <button
                   type="button"
@@ -1654,7 +1654,7 @@ export default function AdminPage() {
                   onClick={togglePrivacy}
                   title="Ẩn/Hiện số tiền để tránh người bên cạnh nhìn thấy"
                 >
-                  {hideMoney ? '🙈 Đang ẩn tiền' : '👁️ Ẩn số tiền'}
+                  {hideMoney ? 'Đang ẩn tiền' : 'Ẩn số tiền'}
                 </button>
                 <button
                   type="button"
@@ -1687,7 +1687,7 @@ export default function AdminPage() {
                 className={`${styles.compactGiftCard} ${giftFilterMethod === 'cash' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'cash' ? 'all' : 'cash')}
               >
-                <span className={styles.compactGiftLabel}>💵 Tiền mặt ({cashRows.length} phong bì)</span>
+                <span className={styles.compactGiftLabel}>Tiền mặt ({cashRows.length} phong bì)</span>
                 <strong style={{ color: '#2e7d32', fontSize: '1.2rem' }}>{formatVND(totalCashMoney)}</strong>
               </div>
 
@@ -1695,7 +1695,7 @@ export default function AdminPage() {
                 className={`${styles.compactGiftCard} ${giftFilterMethod === 'transfer' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'transfer' ? 'all' : 'transfer')}
               >
-                <span className={styles.compactGiftLabel}>🏦 Chuyển khoản ({transferRows.length} CK)</span>
+                <span className={styles.compactGiftLabel}>Chuyển khoản ({transferRows.length} CK)</span>
                 <strong style={{ color: '#1565c0', fontSize: '1.2rem' }}>{formatVND(totalTransferMoney)}</strong>
               </div>
 
@@ -1703,7 +1703,7 @@ export default function AdminPage() {
                 className={`${styles.compactGiftCard} ${giftFilterMethod === 'gold' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'gold' ? 'all' : 'gold')}
               >
-                <span className={styles.compactGiftLabel}>💍 Vàng & Quà hiện vật</span>
+                <span className={styles.compactGiftLabel}>Vàng & Quà hiện vật</span>
                 <strong style={{ color: '#f57f17', fontSize: '1.2rem' }}>{goldRows.length} phần quà</strong>
               </div>
             </div>
@@ -1712,7 +1712,7 @@ export default function AdminPage() {
             {showGiftGroupStats && (
               <div className={styles.card} style={{ padding: '16px 20px', marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <strong style={{ fontSize: '0.95rem', color: '#333' }}>📊 Thống kê Tiền mừng theo Nhóm khách (Bấm vào nhóm để lọc)</strong>
+                  <strong style={{ fontSize: '0.95rem', color: '#333' }}>Thống kê Tiền mừng theo Nhóm khách (Bấm vào nhóm để lọc)</strong>
                   {giftFilterGroup !== 'all' && (
                     <button type="button" className={styles.buttonSecondary} style={{ padding: '3px 10px', fontSize: '0.78rem' }} onClick={() => setGiftFilterGroup('all')}>
                       ✕ Bỏ lọc nhóm
@@ -1803,9 +1803,9 @@ export default function AdminPage() {
                     </div>
                     <div>
                       <select className={styles.select} style={{ padding: '8px 10px', fontSize: '0.88rem' }} value={walkInMethod} onChange={e => setWalkInMethod(e.target.value)}>
-                        <option value="cash">💵 Tiền mặt</option>
-                        <option value="transfer">🏦 Chuyển khoản</option>
-                        <option value="gold">💍 Vàng / Quà</option>
+                        <option value="cash">Tiền mặt</option>
+                        <option value="transfer">Chuyển khoản</option>
+                        <option value="gold">Vàng / Quà</option>
                       </select>
                     </div>
                     <div>
@@ -1831,7 +1831,7 @@ export default function AdminPage() {
                 <input
                   className={styles.input}
                   style={{ flex: '1 1 220px', padding: '9px 14px' }}
-                  placeholder="🔍 Tìm tên khách, nhóm hoặc ghi chú quà..."
+                  placeholder="Tìm tên khách, nhóm hoặc ghi chú quà..."
                   value={giftSearch}
                   onChange={e => { setGiftSearch(e.target.value); setGiftLimit(50); }}
                 />
@@ -1846,10 +1846,10 @@ export default function AdminPage() {
                 <select className={styles.select} style={{ width: '180px', padding: '9px 12px' }} value={giftFilterMethod} onChange={e => { setGiftFilterMethod(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Mọi trạng thái mừng</option>
                   <option value="gifted">✓ Đã mừng ({giftedRows.length})</option>
-                  <option value="ungifted">⏳ Chưa ghi nhận ({allRows.length - giftedRows.length})</option>
-                  <option value="cash">💵 Tiền mặt ({cashRows.length})</option>
-                  <option value="transfer">🏦 Chuyển khoản ({transferRows.length})</option>
-                  <option value="gold">💍 Vàng / Hiện vật ({goldRows.length})</option>
+                  <option value="ungifted">Chưa ghi nhận ({allRows.length - giftedRows.length})</option>
+                  <option value="cash">Tiền mặt ({cashRows.length})</option>
+                  <option value="transfer">Chuyển khoản ({transferRows.length})</option>
+                  <option value="gold">Vàng / Hiện vật ({goldRows.length})</option>
                 </select>
               </div>
 
@@ -1966,9 +1966,9 @@ export default function AdminPage() {
                               value={row.giftMethod || 'cash'}
                               onChange={e => updateGuestGift(row, { giftMethod: e.target.value })}
                             >
-                              <option value="cash">💵 Tiền mặt</option>
-                              <option value="transfer">🏦 Chuyển khoản</option>
-                              <option value="gold">💍 Vàng / Quà</option>
+                              <option value="cash">Tiền mặt</option>
+                              <option value="transfer">Chuyển khoản</option>
+                              <option value="gold">Vàng / Quà</option>
                             </select>
                           </td>
 
@@ -2035,7 +2035,7 @@ export default function AdminPage() {
                   className={styles.buttonSecondary}
                   onClick={() => setShowTemplateEditor(v => !v)}
                 >
-                  ✉️ {showTemplateEditor ? 'Ẩn mẫu câu mời' : 'Tùy chỉnh câu mời mẫu'}
+                  {showTemplateEditor ? 'Ẩn mẫu câu mời' : 'Tùy chỉnh câu mời mẫu'}
                 </button>
                 <button className={styles.buttonSecondary} style={{display: 'flex', alignItems: 'center', gap: '6px'}} onClick={() => {
                    const url = URL.createObjectURL(new Blob([csvFor(crmRows)], { type: 'text/csv;charset=utf-8' }));
@@ -2105,7 +2105,7 @@ export default function AdminPage() {
 
             <div className={styles.card}>
               <div style={{display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap'}}>
-                <input className={styles.input} style={{flex: '1 1 200px'}} placeholder="🔍 Tìm tên khách hoặc nhóm..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCrmLimit(50); }} />
+                <input className={styles.input} style={{flex: '1 1 200px'}} placeholder="Tìm tên khách hoặc nhóm..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCrmLimit(50); }} />
                 <select className={styles.select} style={{width: '165px'}} value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Tất cả nhóm</option>
                   {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
@@ -2182,7 +2182,7 @@ export default function AdminPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
                                   <strong>{row.name}</strong>
                                   {row.group && <span className={styles.groupBadge}>{row.group}</span>}
-                                  {row.tableName && <span className={styles.tableBadge}>🍽️ {row.tableName}</span>}
+                                  {row.tableName && <span className={styles.tableBadge}>{row.tableName}</span>}
                                   {row.legacy && <span className={`${styles.badge} ${styles.neutral}`}>Tự RSVP</span>}
                                 </div>
                                 <div style={{ fontSize: '0.78rem', color: '#888', marginTop: 3 }}>
@@ -2263,7 +2263,7 @@ export default function AdminPage() {
                               )}
                               {row.hasGift && (
                                 <div style={{ marginTop: 4, color: '#2e7d32', fontWeight: 600 }}>
-                                  💰 Mừng: {row.giftAmount > 0 ? formatVND(row.giftAmount) : ''} {row.giftNote ? `(${row.giftNote})` : ''}
+                                  Mừng: {row.giftAmount > 0 ? formatVND(row.giftAmount) : ''} {row.giftNote ? `(${row.giftNote})` : ''}
                                 </div>
                               )}
                             </div>
@@ -2278,7 +2278,7 @@ export default function AdminPage() {
                                   className={styles.iconBtn}
                                   onClick={() => startEditGuest(row)}
                                 >
-                                  ✏️
+                                  <Icon icon={Pencil} size={14} />
                                 </button>
                               )}
                               {row.id && <button title="Xóa phản hồi RSVP" className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{padding: '6px 10px'}} onClick={() => deleteRsvp(row.id)}><Icon icon={Trash2} size={14} /></button>}
@@ -2484,7 +2484,7 @@ export default function AdminPage() {
 
       {isDirty && (
         <div className={styles.floatingSave}>
-          <span style={{fontWeight: 600}}>⚠️ Bạn có thay đổi chưa lưu!</span>
+          <span style={{fontWeight: 600}}>Bạn có thay đổi chưa lưu!</span>
           <button className={styles.buttonPrimary} style={{boxShadow: 'none', background: '#fff', color: '#222', display: 'flex', alignItems: 'center', gap: '6px'}} onClick={handlePublish} disabled={saving}>
             {saving ? <><span className={styles.spinner} role="status" aria-label="Đang lưu"></span> Đang lưu...</> : <><Icon icon={Save} size={16} /> Lưu thay đổi</>}
           </button>
