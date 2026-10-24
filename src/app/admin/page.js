@@ -1673,38 +1673,42 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Thanh tóm tắt 4 chỉ số Tiền mừng gọn gàng (Bấm để lọc nhanh) */}
+            {/* Thanh tóm tắt Tiền mừng phân cấp rõ ràng (Tổng thu lớn - Các khoản thành phần nhỏ hơn) */}
             <div className={styles.compactGiftStats}>
               <div
-                className={`${styles.compactGiftCard} ${giftFilterMethod === 'gifted' ? styles.compactGiftCardActive : ''}`}
+                className={`${styles.compactGiftCard} ${styles.compactGiftPrimary} ${giftFilterMethod === 'gifted' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'gifted' ? 'all' : 'gifted')}
               >
-                <span className={styles.compactGiftLabel}>Tổng thu ({giftedRows.length}/{allRows.length} khách)</span>
-                <strong style={{ color: '#2e7d32', fontSize: '1.35rem' }}>{formatVND(totalGiftMoney)}</strong>
+                <span className={styles.compactGiftLabel}>Tổng thu tiền mừng</span>
+                <strong className={styles.compactGiftTotalValue}>{formatVND(totalGiftMoney)}</strong>
+                <span className={styles.compactGiftMeta}>Đã ghi nhận {giftedRows.length}/{allRows.length} khách</span>
               </div>
 
               <div
                 className={`${styles.compactGiftCard} ${giftFilterMethod === 'cash' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'cash' ? 'all' : 'cash')}
               >
-                <span className={styles.compactGiftLabel}>Tiền mặt ({cashRows.length} phong bì)</span>
-                <strong style={{ color: '#2e7d32', fontSize: '1.2rem' }}>{formatVND(totalCashMoney)}</strong>
+                <span className={styles.compactGiftLabel}>Tiền mặt</span>
+                <strong className={styles.compactGiftSubValue}>{formatVND(totalCashMoney)}</strong>
+                <span className={styles.compactGiftMeta}>{cashRows.length} phong bì</span>
               </div>
 
               <div
                 className={`${styles.compactGiftCard} ${giftFilterMethod === 'transfer' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'transfer' ? 'all' : 'transfer')}
               >
-                <span className={styles.compactGiftLabel}>Chuyển khoản ({transferRows.length} CK)</span>
-                <strong style={{ color: '#1565c0', fontSize: '1.2rem' }}>{formatVND(totalTransferMoney)}</strong>
+                <span className={styles.compactGiftLabel}>Chuyển khoản</span>
+                <strong className={styles.compactGiftSubValue}>{formatVND(totalTransferMoney)}</strong>
+                <span className={styles.compactGiftMeta}>{transferRows.length} giao dịch</span>
               </div>
 
               <div
                 className={`${styles.compactGiftCard} ${giftFilterMethod === 'gold' ? styles.compactGiftCardActive : ''}`}
                 onClick={() => setGiftFilterMethod(giftFilterMethod === 'gold' ? 'all' : 'gold')}
               >
-                <span className={styles.compactGiftLabel}>Vàng & Quà hiện vật</span>
-                <strong style={{ color: '#f57f17', fontSize: '1.2rem' }}>{goldRows.length} phần quà</strong>
+                <span className={styles.compactGiftLabel}>Vàng & Hiện vật</span>
+                <strong className={styles.compactGiftSubValue}>{goldRows.length} phần quà</strong>
+                <span className={styles.compactGiftMeta}>Bấm để lọc danh sách</span>
               </div>
             </div>
 

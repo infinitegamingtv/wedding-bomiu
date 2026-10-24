@@ -940,9 +940,20 @@
 }
 .compactGiftStats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1.45fr 1fr 1fr 1fr;
   gap: 12px;
   margin-bottom: 16px;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .compactGiftStats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .compactGiftStats {
+    grid-template-columns: 1fr;
+  }
 }
 .compactGiftCard {
   background: #fff;
@@ -951,9 +962,15 @@
   padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  gap: 3px;
   cursor: pointer;
   transition: all 0.15s;
+}
+.compactGiftPrimary {
+  background: #fdfaf5;
+  border-color: #e2d1b8;
+  padding: 16px 22px;
 }
 .compactGiftCard:hover {
   border-color: #C5A880;
@@ -965,8 +982,26 @@
   box-shadow: 0 2px 10px rgba(197, 168, 128, 0.2);
 }
 .compactGiftLabel {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #777;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.compactGiftTotalValue {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #1b5e20;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.compactGiftSubValue {
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.25;
+}
+.compactGiftMeta {
+  font-size: 0.76rem;
+  color: #888;
 }
