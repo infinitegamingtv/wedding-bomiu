@@ -623,10 +623,25 @@ export default function AdminPage() {
 
   // Build ordered list of table names (Mâm 1..N + any custom/assigned tables) & O(N) load lookup map
   const minDefaultTables = Math.max(4, Math.ceil((totalSeatingPeople || 10) / seatsPerTable));
-  const defaultTableNames = Array.from({ length: minDefaultTables }, (_, i) => `Mâm ${i + 1}`);
   const savedCustomTables = (data.texts?.customTables || '').split('|').map(s => s.trim()).filter(Boolean);
+  const deletedTables = (data.texts?.deletedTables || '').split('|').map(s => s.trim()).filter(Boolean);
   const assignedTableNames = allRows.map(r => r.tableName).filter(Boolean);
-  const allTableNames = Array.from(new Set([...defaultTableNames, ...savedCustomTables, ...extraTables, ...assignedTableNames]));
+
+  // Only generate default "Mâm X" if it hasn't been renamed or deleted
+  const existingCustomAndAssigned = [...savedCustomTables, ...extraTables, ...assignedTableNames];
+  const defaultTableNames = Array.from({ length: minDefaultTables }, (_, i) => `Mâm ${i + 1}`).filter(defName => {
+    if (deletedTables.includes(defName)) return false;
+    // Also skip "Mâm X" if a renamed version like "Mâm X - ..." or "Mâm X (...)" already exists
+    const prefixRegex = new RegExp(`^${defName}(\\s*[-–—:(_]|\\s+)`, 'i');
+    if (existingCustomAndAssigned.some(t => t !== defName && prefixRegex.test(t))) return false;
+    return true;
+  });
+
+  const baseOrderedTables = savedCustomTables.length > 0
+    ? [...savedCustomTables.filter(t => !deletedTables.includes(t) || assignedTableNames.includes(t)), ...defaultTableNames]
+    : [...defaultTableNames, ...savedCustomTables];
+
+  const allTableNames = Array.from(new Set([...baseOrderedTables, ...extraTables, ...assignedTableNames]));
 
   const tableLoadMap = {};
   const tableGuestsMap = {};
@@ -657,8 +672,12 @@ export default function AdminPage() {
     const name = newTableName.trim() || `Mâm ${allTableNames.length + 1}`;
     if (!allTableNames.includes(name)) {
       setExtraTables(prev => [...prev, name]);
-      const nextCustom = Array.from(new Set([...savedCustomTables, name])).join('|');
-      queueAutoSave(prev => ({ ...prev, texts: { ...prev.texts, customTables: nextCustom } }));
+      const nextCustom = Array.from(new Set([...allTableNames, name])).join('|');
+      const nextDeleted = deletedTables.filter(t => t !== name).join('|');
+      queueAutoSave(prev => ({
+        ...prev,
+        texts: { ...prev.texts, customTables: nextCustom, deletedTables: nextDeleted }
+      }));
     }
     setNewTableName('');
   };
@@ -670,17 +689,36 @@ export default function AdminPage() {
     setExtraTables(prev => prev.map(t => t === oldName ? clean : t));
     queueAutoSave(prev => {
       const updatedLinks = (prev.links || []).map(l => (l.tableName || '').trim() === oldName ? { ...l, tableName: clean } : l);
-      const nextCustom = Array.from(new Set([...(prev.texts?.customTables || '').split('|').map(s => s.trim()).filter(Boolean).map(t => t === oldName ? clean : t), clean])).join('|');
-      return { ...prev, links: updatedLinks, texts: { ...prev.texts, customTables: nextCustom } };
+      // Replace oldName with clean in-place so order is preserved and oldName never duplicates
+      const replacedList = allTableNames.map(t => t === oldName ? clean : t);
+      const nextCustom = Array.from(new Set(replacedList)).join('|');
+      const prevDeleted = (prev.texts?.deletedTables || '').split('|').map(s => s.trim()).filter(Boolean);
+      const nextDeleted = Array.from(new Set([...prevDeleted.filter(t => t !== clean), oldName])).join('|');
+      return {
+        ...prev,
+        links: updatedLinks,
+        texts: { ...prev.texts, customTables: nextCustom, deletedTables: nextDeleted }
+      };
     });
   };
 
-  const handleClearTable = (tName) => {
-    if (!confirm(`Gỡ toàn bộ khách khỏi "${tName}" để xếp lại?`)) return;
-    queueAutoSave(prev => ({
-      ...prev,
-      links: (prev.links || []).map(l => (l.tableName || '').trim() === tName ? { ...l, tableName: '' } : l)
-    }));
+  const handleDeleteOrClearTable = (tName, guestCount) => {
+    const msg = guestCount > 0
+      ? `Gỡ ${guestCount} khách khỏi "${tName}" và xóa mâm này?`
+      : `Xóa mâm trống "${tName}" khỏi sơ đồ?`;
+    if (!confirm(msg)) return;
+    setExtraTables(prev => prev.filter(t => t !== tName));
+    queueAutoSave(prev => {
+      const updatedLinks = (prev.links || []).map(l => (l.tableName || '').trim() === tName ? { ...l, tableName: '' } : l);
+      const nextCustom = allTableNames.filter(t => t !== tName).join('|');
+      const prevDeleted = (prev.texts?.deletedTables || '').split('|').map(s => s.trim()).filter(Boolean);
+      const nextDeleted = Array.from(new Set([...prevDeleted, tName])).join('|');
+      return {
+        ...prev,
+        links: updatedLinks,
+        texts: { ...prev.texts, customTables: nextCustom, deletedTables: nextDeleted }
+      };
+    });
   };
 
   const handleAutoPackTables = () => {
@@ -1419,17 +1457,15 @@ export default function AdminPage() {
                           >
                             ✏️
                           </button>
-                          {guestsInTable.length > 0 && (
-                            <button
-                              type="button"
-                              className={styles.iconBtn}
-                              style={{ padding: '2px 6px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#c62828' }}
-                              title="Gỡ toàn bộ khách khỏi mâm này"
-                              onClick={() => handleClearTable(tName)}
-                            >
-                              🗑️
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            className={styles.iconBtn}
+                            style={{ padding: '2px 6px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#c62828' }}
+                            title={guestsInTable.length > 0 ? 'Gỡ khách & xóa mâm này' : 'Xóa mâm trống này'}
+                            onClick={() => handleDeleteOrClearTable(tName, guestsInTable.length)}
+                          >
+                            🗑️
+                          </button>
                         </div>
                         <span className={`${styles.tableCapacityBadge} ${capBadgeClass}`}>
                           {capText}
