@@ -1,16 +1,17 @@
 'use client';
-import confetti from 'canvas-confetti';
 /* Existing originals are preserved; public photo URLs use generated WebP copies. */
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import styles from './Invitation.module.css';
-import { Mascot } from 'page-mascot';
 import Image from 'next/image';
 import { MorphIcon } from "morphicons/react";
 import { Music, Pause, SkipBack, SkipForward, X, ArrowUpRight, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, MapPin, Heart, Send, Check, Mail, MailOpen, Navigation, BookHeart, Image as ImageIcon, CalendarCheck, Loader2 } from "lucide";
 
+const Mascot = dynamic(() => import('page-mascot').then(mod => mod.Mascot), { ssr: false });
+
 const flowerItems = Array.from({ length: 8 }, (_, i) => ({ left: `${(i * 13 + 7) % 100}%`, animationDelay: `${i * 2.3}s`, animationDuration: `${22 + i}s` }));
-const envDecorations = Array.from({ length: 24 }, (_, i) => ({ left: `${(i * 17 + 5) % 100}%`, animationDelay: `${i * 0.7}s`, animationDuration: `${12 + (i % 5) * 2}s`, fontSize: `${0.8 + (i % 3) * 0.4}rem`, content: i % 2 === 0 ? '✿' : '❤', color: i % 2 === 0 ? '#fcedd9' : '#ff8585' }));
+const envDecorations = Array.from({ length: 12 }, (_, i) => ({ left: `${(i * 17 + 5) % 100}%`, animationDelay: `${i * 1.1}s`, animationDuration: `${14 + (i % 5) * 2}s`, fontSize: `${0.8 + (i % 3) * 0.35}rem`, content: i % 2 === 0 ? '✿' : '❤', color: i % 2 === 0 ? '#fcedd9' : '#ff8585' }));
 const formatDate = date => {
   if (!(date instanceof Date) || isNaN(date.getTime())) return '';
   const vnTime = new Date(date.getTime() + (7 * 60 + date.getTimezoneOffset()) * 60000);
@@ -39,11 +40,15 @@ const noOrphan = str => {
 
 const MountainDeco = () => (
   <div style={{ position: 'absolute', inset: 0, zIndex: -1, pointerEvents: 'none' }}>
-    <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.6 }}>
-      <circle cx="200" cy="180" r="60" fill="#fff" filter="blur(16px)">
-        <animate attributeName="cy" values="280; 100; 100; 280" dur="20s" repeatCount="indefinite" />
-      </circle>
-      <circle cx="200" cy="180" r="30" fill="#fcf6ec" filter="blur(4px)">
+    <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.65 }}>
+      <defs>
+        <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fcf6ec" stopOpacity="1" />
+          <stop offset="45%" stopColor="#ffffff" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="200" cy="180" r="68" fill="url(#sunGlow)">
         <animate attributeName="cy" values="280; 100; 100; 280" dur="20s" repeatCount="indefinite" />
       </circle>
     </svg>
@@ -93,19 +98,93 @@ function mapEmbed(value) {
   } catch { return null; }
 }
 
-function PhotoDialog({ src, onClose }) {
+function PhotoDialog({ images = [], currentIndex = 0, onNavigate, onClose }) {
   const dialog = useRef(null);
+  const touchStartX = useRef(null);
+  const total = images.length;
+  const src = images[currentIndex];
+
   useEffect(() => {
     const element = dialog.current;
     const previousOverflow = document.body.style.overflow;
-    element.showModal();
+    if (element && !element.open) element.showModal();
     document.body.style.overflow = 'hidden';
-    return () => { element.close(); document.body.style.overflow = previousOverflow; };
+    return () => {
+      if (element && element.open) element.close();
+      document.body.style.overflow = previousOverflow;
+    };
   }, []);
-  return <dialog ref={dialog} className={styles.lightbox} aria-label="Ảnh cưới phóng to" onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <button autoFocus className={styles.lightboxClose} onClick={onClose} aria-label="Đóng ảnh"><MorphIcon icon={X} size={24} color="currentColor" /></button>
-    <img src={src} alt="Khoảnh khắc ngày cưới" />
-  </dialog>;
+
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (total <= 1) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        onNavigate((currentIndex - 1 + total) % total);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        onNavigate((currentIndex + 1) % total);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, total, onNavigate]);
+
+  const handleTouchStart = e => {
+    touchStartX.current = e.touches?.[0]?.clientX ?? null;
+  };
+  const handleTouchEnd = e => {
+    if (touchStartX.current === null || total <= 1) return;
+    const endX = e.changedTouches?.[0]?.clientX ?? touchStartX.current;
+    const delta = endX - touchStartX.current;
+    if (Math.abs(delta) > 45) {
+      if (delta > 0) onNavigate((currentIndex - 1 + total) % total);
+      else onNavigate((currentIndex + 1) % total);
+    }
+    touchStartX.current = null;
+  };
+
+  return (
+    <dialog
+      ref={dialog}
+      className={styles.lightbox}
+      aria-label="Ảnh cưới phóng to"
+      onCancel={onClose}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {total > 1 && (
+        <span className={styles.lightboxCounter} aria-live="polite">
+          {currentIndex + 1} / {total}
+        </span>
+      )}
+      <button autoFocus className={styles.lightboxClose} onClick={onClose} aria-label="Đóng ảnh">
+        <MorphIcon icon={X} size={24} color="currentColor" />
+      </button>
+      {total > 1 && (
+        <button
+          type="button"
+          className={`${styles.lightboxNav} ${styles.lightboxPrev}`}
+          onClick={e => { e.stopPropagation(); onNavigate((currentIndex - 1 + total) % total); }}
+          aria-label="Ảnh trước"
+        >
+          <MorphIcon icon={ArrowLeft} size={24} color="currentColor" />
+        </button>
+      )}
+      <img src={src} alt={`Khoảnh khắc ngày cưới ${currentIndex + 1}`} />
+      {total > 1 && (
+        <button
+          type="button"
+          className={`${styles.lightboxNav} ${styles.lightboxNext}`}
+          onClick={e => { e.stopPropagation(); onNavigate((currentIndex + 1) % total); }}
+          aria-label="Ảnh tiếp theo"
+        >
+          <MorphIcon icon={ArrowRight} size={24} color="currentColor" />
+        </button>
+      )}
+    </dialog>
+  );
 }
 
 function FadeInSection({ children, id, className = '' }) {
@@ -303,7 +382,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
     }, [tracksCount]);
   
   
-  const [zoom, setZoom] = useState(null);
+  const [zoomIndex, setZoomIndex] = useState(null);
+  const [copiedBank, setCopiedBank] = useState(false);
+  const [visibleWishesCount, setVisibleWishesCount] = useState(6);
   const [status, setStatus] = useState('idle');
   const scrollRef = useRef(null);
 
@@ -443,6 +524,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       setNewWish(result.wish); setHasReply(true); setReplyError('');
       setStatus('success');
       try {
+        const { default: confetti } = await import('canvas-confetti');
         confetti({
           particleCount: 70,
           spread: 60,
@@ -456,6 +538,14 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(window.location.href); setCopyStatus('Đã sao chép đường dẫn thiệp.'); }
     catch { setCopyStatus('Chưa sao chép được. Bạn có thể sao chép đường dẫn trên thanh địa chỉ.'); }
+  };
+  const copyBankNumber = async () => {
+    if (!invitation.accountNumber) return;
+    try {
+      await navigator.clipboard.writeText(String(invitation.accountNumber).trim());
+      setCopiedBank(true);
+      setTimeout(() => setCopiedBank(false), 2500);
+    } catch {}
   };
 
   return <div className={styles.wrapper}>
@@ -475,7 +565,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           {envDecorations.map((dec, index) => <span key={index} className={styles.envFloatingItem} style={{ left: dec.left, animationDelay: dec.animationDelay, animationDuration: dec.animationDuration, fontSize: dec.fontSize, color: dec.color }}>{dec.content}</span>)}
         </div>
         <div className={styles.envelopeCard}>
-          {invitation.logoUrl && <Image className={styles.cardLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} priority />}
+          {invitation.logoUrl && <Image className={styles.cardLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} priority sizes="(max-width: 700px) 220px, 280px" />}
           <h1 className={styles.envNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
           {validDate && <p className={styles.envelopeDate}>{formatDate(date).replaceAll('/', ' — ')}</p>}
           <div className={styles.envTo}><span>Thân mời</span><strong>{guestName || 'Quý khách'}</strong></div>
@@ -498,7 +588,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
       {/* MAIN WEBSITE CONTENT */}
       <div style={{ height: opened ? 'auto' : '100vh', overflow: opened ? 'visible' : 'hidden' }}>
         <a className={styles.skipLink} href="#rsvp">Đến phần xác nhận tham dự</a>
-        <div className={styles.flowers} aria-hidden="true">{flowerItems.map((style, index) => <span key={index} style={style}>✿</span>)}</div>
+        {opened && <div className={styles.flowers} aria-hidden="true">{flowerItems.map((style, index) => <span key={index} style={style}>✿</span>)}</div>}
         <nav className={styles.navBar} aria-label="Các phần của thiệp">
           <a href="#invite"><InteractiveIcon defaultIcon={Mail} hoverIcon={MailOpen} /> Lời mời</a>
           {stories.length > 0 && <a href="#story"><InteractiveIcon defaultIcon={BookHeart} /> Chuyện mình</a>}
@@ -507,9 +597,9 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
         </nav>
         <main className={styles.mainContent}>
         <section id="hero" className={styles.hero}>
-          {invitation.heroBgUrl && <Image className={styles.heroBgImage} src={invitation.heroBgUrl} alt="" fill priority quality={90} sizes="100vw" />}
+          {invitation.heroBgUrl && <Image className={styles.heroBgImage} src={invitation.heroBgUrl} alt="" fill quality={90} sizes="100vw" />}
           <div className={styles.heroContent}>
-            {invitation.logoUrl && <Image className={styles.heroLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} priority />}
+            {invitation.logoUrl && <Image className={styles.heroLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} sizes="(max-width: 700px) 220px, 320px" />}
             <p className={styles.eyebrow}>{texts.heroSubtitle || 'Lễ Thành Hôn'}</p>
             <h1 ref={heading} tabIndex={-1} className={styles.heroNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
             {validDate && <p className={styles.heroDate}>{formatDate(date).replaceAll('/', ' \u2022 ')}</p>}
@@ -617,7 +707,7 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
             </button>
               <div className={styles.horizontalScroll} ref={scrollRef}>
                 {albums.map((url, index) => (
-                  <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoom(url)}>
+                  <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoomIndex(index)}>
                     <Image src={url} alt={`Ảnh cưới ${index + 1}`} width={600} height={800} sizes="(max-width: 600px) 75vw, 320px" loading="lazy" />
                   </button>
                 ))}
@@ -654,13 +744,30 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
               <p className={styles.intro} style={{ marginBottom: '16px' }}>Quét QR để gửi yêu thương trực tiếp tới cô dâu và chú rể</p>
               {(invitation.bankName || invitation.accountName || invitation.accountNumber) && (
                 <div className={styles.bankDetails}>
-                  {invitation.bankName && <p><strong>Ngân hàng:</strong> {invitation.bankName}</p>}
-                  {invitation.accountName && <p><strong>Chủ tài khoản:</strong> {invitation.accountName}</p>}
-                  {invitation.accountNumber && <p><strong>Số tài khoản:</strong> <span className={styles.bankNumber}>{invitation.accountNumber}</span></p>}
+                  {invitation.bankName && <p><strong>Ngân hàng:</strong> <span>{invitation.bankName}</span></p>}
+                  {invitation.accountName && <p><strong>Chủ tài khoản:</strong> <span>{invitation.accountName}</span></p>}
+                  {invitation.accountNumber && (
+                    <p style={{ alignItems: 'center' }}>
+                      <strong>Số tài khoản:</strong>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <span className={styles.bankNumber}>{invitation.accountNumber}</span>
+                        <button type="button" className={styles.copyStkBtn} onClick={copyBankNumber} aria-label="Sao chép số tài khoản">
+                          <InteractiveIcon defaultIcon={Copy} isActive={copiedBank} activeIcon={Check} size={14} />
+                          <span>{copiedBank ? 'Đã sao chép!' : 'Sao chép'}</span>
+                        </button>
+                      </span>
+                    </p>
+                  )}
                 </div>
               )}
               <img className={styles.giftQr} src={invitation.qrCodeUrl} alt="Mã QR mừng cưới do cô dâu chú rể cung cấp" loading="lazy" />
               <div className={styles.qrActions}>
+                {invitation.accountNumber && (
+                  <button type="button" className={styles.secondaryButton} onClick={copyBankNumber}>
+                    <InteractiveIcon defaultIcon={Copy} isActive={copiedBank} activeIcon={Check} size={16} />
+                    {copiedBank ? 'Đã sao chép STK!' : 'Sao chép STK'}
+                  </button>
+                )}
                 <a href={invitation.qrCodeUrl} download="QR_Mung_Cuoi.jpg" target="_blank" rel="noreferrer" className={styles.primaryButton} onClick={handleDownloadQR}>
                    Lưu ảnh QR
                 </a>
@@ -672,13 +779,20 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           )}
         </FadeInSection>}
 
-        <FadeInSection id="guestbook"><p className={styles.eyebrow}>YÊU THƯƠNG ĐƯỢC VIẾT THÀNH LỜI</p><h2 className={styles.sectionTitle}>{texts.guestbookTitle || 'Sổ Lưu Bút'} <span className={styles.guestbookEmoji}>🍀💚</span></h2>{invitation.guestbookPhotoUrl && <Image className={styles.guestbookPhoto} src={invitation.guestbookPhotoUrl} alt="Kỷ niệm của chúng mình" width={800} height={600} loading="lazy" />}<div className={styles.wishes}>{wishes.length ? wishes.map((wish, index) => <blockquote key={wish.id || index}><p>“{wish.message}”</p><cite>— {wish.name}</cite></blockquote>) : <p className={styles.intro}>Hãy là người đầu tiên gửi lời chúc cho chúng mình nhé.</p>}</div><a className={styles.secondaryButton} href="#rsvp">Gửi một lời chúc</a></FadeInSection>
+        <FadeInSection id="guestbook"><p className={styles.eyebrow}>YÊU THƯƠNG ĐƯỢC VIẾT THÀNH LỜI</p><h2 className={styles.sectionTitle}>{texts.guestbookTitle || 'Sổ Lưu Bút'} <span className={styles.guestbookEmoji}>🍀💚</span></h2>{invitation.guestbookPhotoUrl && <Image className={styles.guestbookPhoto} src={invitation.guestbookPhotoUrl} alt="Kỷ niệm của chúng mình" width={800} height={600} loading="lazy" />}<div className={styles.wishes}>{wishes.length ? wishes.slice(0, visibleWishesCount).map((wish, index) => <blockquote key={wish.id || index}><p>“{wish.message}”</p><cite>— {wish.name}</cite></blockquote>) : <p className={styles.intro}>Hãy là người đầu tiên gửi lời chúc cho chúng mình nhé.</p>}</div><div className={styles.actions} style={{ marginTop: 16 }}>{wishes.length > visibleWishesCount && <button type="button" className={styles.secondaryButton} onClick={() => setVisibleWishesCount(count => count + 8)}>Xem thêm lời chúc ({wishes.length - visibleWishesCount})</button>}<a className={styles.secondaryButton} href="#rsvp">Gửi một lời chúc</a></div></FadeInSection>
 
         
         <footer className={styles.footer}><span className={styles.eyebrow}>CẢM ƠN VÌ LÀ MỘT PHẦN NGÀY VUI</span><p className={styles.footerNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</p><button className={styles.secondaryButton} onClick={copyLink}><InteractiveIcon defaultIcon={Copy} isActive={!!copyStatus} activeIcon={Check} size={16} style={{ marginRight: 6 }} /> Sao chép đường dẫn thiệp</button><p className={styles.copyStatus} role="status">{copyStatus}</p><a href="#hero" style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Về đầu trang <InteractiveIcon defaultIcon={ArrowUp} hoverIcon={ArrowUp} size={16} /></a></footer>
       </main>
     </div>
-    {zoom && <PhotoDialog src={zoom} onClose={() => setZoom(null)} />}
+    {zoomIndex !== null && albums[zoomIndex] && (
+      <PhotoDialog
+        images={albums}
+        currentIndex={zoomIndex}
+        onNavigate={setZoomIndex}
+        onClose={() => setZoomIndex(null)}
+      />
+    )}
     {opened && (
       <>
         <div className={`${styles.mascot} ${styles.mascotRight}`} aria-label="Linh vật chó">

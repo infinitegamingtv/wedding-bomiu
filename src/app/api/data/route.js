@@ -25,6 +25,7 @@ export async function POST(request) {
     for (const key of ['albums', 'stories']) if (!Array.isArray(body[key])) invalid('Danh sách ảnh hoặc câu chuyện không hợp lệ.');
     await setWeddingData(body);
     revalidatePath('/');
+    revalidatePath('/invite/[slug]', 'page');
     return json(await getWeddingData());
   } catch (error) { return failure(error); }
 }

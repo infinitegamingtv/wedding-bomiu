@@ -258,3 +258,69 @@
 .bgImage { object-fit: cover; object-position: center; z-index: 0; }
 .envOverlay { position: absolute; inset: 0; z-index: 0; background: linear-gradient(0deg, #302719a0, #30271960); pointer-events: none; }
 .heroBgImage { object-fit: cover; object-position: center; z-index: -2; }
+
+
+/* Copy Bank Account Button & Upgraded Lightbox Navigation */
+.copyStkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #59472d;
+  background: #f5ecdc;
+  border: 1px solid #d1be9f;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.copyStkBtn:hover {
+  background: #eadbc1;
+}
+.copyStkBtn:active {
+  transform: scale(0.96);
+}
+.lightboxCounter {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+.lightboxNav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(23, 21, 18, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  z-index: 5;
+}
+.lightboxNav:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-50%) scale(1.06);
+}
+.lightboxPrev { left: 16px; }
+.lightboxNext { right: 16px; }
+@media (max-width: 700px) {
+  .lightboxNav { width: 42px; height: 42px; }
+  .lightboxPrev { left: 8px; }
+  .lightboxNext { right: 8px; }
+}

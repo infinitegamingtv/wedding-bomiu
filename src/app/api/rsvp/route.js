@@ -44,6 +44,7 @@ export async function POST(request) {
     const record = { ...who, name: body.name.trim(), attending: body.attending, eventId: eventIds.join(','), location: eventObjects.map(e => e.name).join(' + '), count: body.attending === 'yes' ? body.count : 0, message: body.message.trim(), submittedAt: previous?.submittedAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
     await saveResponse(record);
     revalidatePath('/');
+    revalidatePath('/invite/[slug]', 'page');
     return json({ success: true, rsvp: record, wish: { id: record.id, name: record.name, message: record.message } });
   } catch (error) { return failure(error); }
 }
