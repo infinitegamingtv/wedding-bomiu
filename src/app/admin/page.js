@@ -80,6 +80,13 @@ export default function AdminPage() {
   const [editingGuestId, setEditingGuestId] = useState(null);
   const [editForm, setEditForm] = useState({ guestName: '', group: '', eventId: '' });
 
+  // Smart Pagination Limits for Large Guest Lists
+  const [crmLimit, setCrmLimit] = useState(50);
+  const [seatingLimit, setSeatingLimit] = useState(50);
+  const [giftLimit, setGiftLimit] = useState(50);
+  const [refreshing, setRefreshing] = useState(false);
+  const restoreInputRef = useRef(null);
+
   // Auto-Save Queue Refs & State
   const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const dataRef = useRef(null);
@@ -152,9 +159,11 @@ export default function AdminPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Lỗi tự động lưu');
 
-      const nextMerged = pendingSaveRef.current
-        ? { ...dataRef.current, revision: result.revision, rsvps: result.rsvps }
-        : result;
+      const nextMerged = {
+        ...dataRef.current,
+        revision: result.revision,
+        rsvps: result.rsvps,
+      };
 
       dataRef.current = nextMerged;
       setData(nextMerged);
@@ -176,7 +185,7 @@ export default function AdminPage() {
     }
   };
 
-  const queueAutoSave = (updater) => {
+  const queueAutoSave = (updater, delayMs = 300) => {
     setData(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       dataRef.current = next;
@@ -186,7 +195,7 @@ export default function AdminPage() {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
       flushAutoSave();
-    }, 350);
+    }, delayMs);
   };
 
   const handleLogin = async e => {
@@ -216,12 +225,91 @@ export default function AdminPage() {
     } catch (err) { setNotice(err.message); }
   };
 
+  const parsedOriginal = useMemo(() => {
+    if (!originalData) return null;
+    try { return JSON.parse(originalData); }
+    catch { return null; }
+  }, [originalData]);
+
+  const allRows = useMemo(() => (data ? guestRows(data) : []), [data]);
+
   const isDirty = useMemo(() => {
-    if (!data || !originalData) return false;
+    if (!data || !parsedOriginal) return false;
     const current = { ...data, rsvps: undefined, revision: undefined };
-    const original = { ...JSON.parse(originalData), rsvps: undefined, revision: undefined };
+    const original = { ...parsedOriginal, rsvps: undefined, revision: undefined };
     return JSON.stringify(current) !== JSON.stringify(original);
-  }, [data, originalData]);
+  }, [data, parsedOriginal]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty || autoSaveStatus === 'saving') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty, autoSaveStatus]);
+
+  const handleRefreshData = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const res = await fetch('/api/data');
+      if (!res.ok) throw new Error('Không thể làm mới dữ liệu.');
+      const fresh = await res.json();
+      if (isDirty) {
+        // Keep unsaved local edits in content/gallery, only sync latest RSVPs & revision
+        setData(prev => ({ ...prev, rsvps: fresh.rsvps, revision: fresh.revision }));
+        dataRef.current = { ...dataRef.current, rsvps: fresh.rsvps, revision: fresh.revision };
+      } else {
+        setData(fresh);
+        dataRef.current = fresh;
+        setOriginalData(JSON.stringify(fresh));
+      }
+      setNotice('✓ Đã cập nhật phản hồi (RSVP) và dữ liệu mới nhất!');
+      setTimeout(() => setNotice(''), 2500);
+    } catch (err) {
+      setNotice(err.message);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleBackupJson = () => {
+    if (!dataRef.current) return;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(dataRef.current, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sao-luu-dam-cuoi-${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRestoreJson = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed || !parsed.invitation || !Array.isArray(parsed.events) || !Array.isArray(parsed.links)) {
+        alert('File sao lưu không hợp lệ hoặc không đúng định dạng thiệp cưới!');
+        return;
+      }
+      if (!confirm(`Bạn có chắc muốn khôi phục dữ liệu từ file "${file.name}" (${parsed.links.length} khách mời)?`)) return;
+      queueAutoSave(prev => ({
+        ...parsed,
+        revision: prev?.revision ?? parsed.revision ?? 1,
+      }), 100);
+      setNotice('✓ Đã khôi phục dữ liệu từ bản sao lưu và tự động lưu!');
+      setTimeout(() => setNotice(''), 3000);
+    } catch (err) {
+      alert('Không đọc được file JSON: ' + err.message);
+    }
+  };
 
   const handlePublish = async () => {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -292,7 +380,7 @@ export default function AdminPage() {
   };
 
   // Update Gift Data on any row (including legacy RSVP rows)
-  const updateGuestGift = (row, patch) => {
+  const updateGuestGift = (row, patch, delayMs = 300) => {
     queueAutoSave(prev => {
       const links = [...(prev.links || [])];
       const targetId = row.guestId || row.id;
@@ -317,7 +405,7 @@ export default function AdminPage() {
         });
       }
       return { ...prev, links };
-    });
+    }, delayMs);
   };
 
   const removeGuestLink = (id) => {
@@ -473,8 +561,6 @@ export default function AdminPage() {
 
   if (!data) return <div style={{padding: '50px', textAlign: 'center'}}>Lỗi tải dữ liệu. <button onClick={logout}>Đăng xuất / Tải lại</button></div>;
 
-  const allRows = guestRows(data);
-
   // Collect all unique groups for filtering
   const availableGroups = Array.from(new Set([...DEFAULT_GROUPS, ...allRows.map(r => r.group).filter(Boolean)]));
 
@@ -535,12 +621,22 @@ export default function AdminPage() {
   const totalSeatedPeople = seatedEventRows.reduce((s, r) => s + guestSeatCount(r), 0);
   const totalUnseatedPeople = unseatedEventRows.reduce((s, r) => s + guestSeatCount(r), 0);
 
-  // Build ordered list of table names (Mâm 1..N + any custom/assigned tables)
+  // Build ordered list of table names (Mâm 1..N + any custom/assigned tables) & O(N) load lookup map
   const minDefaultTables = Math.max(4, Math.ceil((totalSeatingPeople || 10) / seatsPerTable));
   const defaultTableNames = Array.from({ length: minDefaultTables }, (_, i) => `Mâm ${i + 1}`);
   const savedCustomTables = (data.texts?.customTables || '').split('|').map(s => s.trim()).filter(Boolean);
   const assignedTableNames = allRows.map(r => r.tableName).filter(Boolean);
   const allTableNames = Array.from(new Set([...defaultTableNames, ...savedCustomTables, ...extraTables, ...assignedTableNames]));
+
+  const tableLoadMap = {};
+  const tableGuestsMap = {};
+  for (const r of seatingEventRows) {
+    if (r.tableName) {
+      tableLoadMap[r.tableName] = (tableLoadMap[r.tableName] || 0) + guestSeatCount(r);
+      if (!tableGuestsMap[r.tableName]) tableGuestsMap[r.tableName] = [];
+      tableGuestsMap[r.tableName].push(r);
+    }
+  }
 
   const seatingFilteredRows = seatingEventRows.filter(r => {
     const groupMatch = seatingGroup === 'all' || r.group === seatingGroup;
@@ -720,16 +816,52 @@ export default function AdminPage() {
             <span style={{display: 'inline-flex', width: 20}}><Icon icon={ImageIcon} size={18} /></span> Ảnh Album
           </button>
         </div>
-        <div style={{marginTop: 'auto', padding: '16px'}}>
-          <a href="/" target="_blank" className={styles.buttonSecondary} style={{display: 'block', textAlign: 'center', marginBottom: '8px', textDecoration: 'none'}}>Xem thiệp &rarr;</a>
-          <button className={styles.buttonSecondary} style={{width: '100%', display: 'flex', justifyContent: 'center', gap: '8px'}} onClick={logout}><Icon icon={LogOut} size={18} /> Đăng xuất</button>
+        <div style={{marginTop: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px'}}>
+          <input
+            ref={restoreInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={handleRestoreJson}
+          />
+          <button
+            type="button"
+            className={styles.buttonSecondary}
+            style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px' }}
+            onClick={handleRefreshData}
+            disabled={refreshing}
+          >
+            {refreshing ? '⏳ Đang làm mới...' : '🔄 Làm mới phản hồi'}
+          </button>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              type="button"
+              className={styles.buttonSecondary}
+              style={{ flex: 1, fontSize: '0.78rem', padding: '7px 8px' }}
+              onClick={handleBackupJson}
+              title="Tải toàn bộ dữ liệu khách, lời chúc, sơ đồ mâm, tiền mừng về máy (.json)"
+            >
+              📥 Sao lưu
+            </button>
+            <button
+              type="button"
+              className={styles.buttonSecondary}
+              style={{ flex: 1, fontSize: '0.78rem', padding: '7px 8px' }}
+              onClick={() => restoreInputRef.current?.click()}
+              title="Khôi phục toàn bộ dữ liệu từ file .json đã sao lưu"
+            >
+              📤 Khôi phục
+            </button>
+          </div>
+          <a href="/" target="_blank" className={styles.buttonSecondary} style={{display: 'block', textAlign: 'center', textDecoration: 'none', fontSize: '0.88rem', padding: '8px 12px'}}>Xem thiệp &rarr;</a>
+          <button className={styles.buttonSecondary} style={{width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', fontSize: '0.88rem', padding: '8px 12px'}} onClick={logout}><Icon icon={LogOut} size={18} /> Đăng xuất</button>
         </div>
       </aside>
 
       <main className={styles.mainContent}>
         {/* Top Auto-Save Status Indicator */}
         {autoSaveStatus !== 'idle' && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <div className={styles.noPrint} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
             {autoSaveStatus === 'saving' && (
               <span className={`${styles.autoSaveBadge} ${styles.autoSaveSaving}`}>⏳ Đang tự động lưu...</span>
             )}
@@ -742,13 +874,30 @@ export default function AdminPage() {
           </div>
         )}
 
-        {notice && <div className={styles.notice}><span>{notice}</span><button onClick={() => setNotice('')} style={{background:'transparent',border:'none',cursor:'pointer'}}>✕</button></div>}
+        {notice && <div className={`${styles.notice} ${styles.noPrint}`}><span>{notice}</span><button onClick={() => setNotice('')} style={{background:'transparent',border:'none',cursor:'pointer'}}>✕</button></div>}
         
         {activeTab === 'dashboard' && (
           <div>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>Tổng quan</h1>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={styles.privacyBtn}
+                  onClick={handleRefreshData}
+                  disabled={refreshing}
+                  title="Tải lại phản hồi (RSVP) & lời chúc mới nhất từ khách mà không cần F5"
+                >
+                  {refreshing ? '⏳ Đang tải...' : '🔄 Làm mới RSVP'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.privacyBtn}
+                  onClick={handleBackupJson}
+                  title="Tải bản sao lưu dự phòng toàn bộ dữ liệu (.json)"
+                >
+                  🛡️ Sao lưu (.JSON)
+                </button>
                 <button
                   type="button"
                   className={`${styles.privacyBtn} ${hideMoney ? styles.privacyBtnActive : ''}`}
@@ -1110,6 +1259,14 @@ export default function AdminPage() {
                 <button
                   type="button"
                   className={styles.buttonSecondary}
+                  onClick={() => window.print()}
+                  title="In sơ đồ các mâm ra giấy A4 hoặc lưu file PDF để đưa cho lễ tân dẫn khách"
+                >
+                  🖨️ In Sơ Đồ Mâm (A4/PDF)
+                </button>
+                <button
+                  type="button"
+                  className={styles.buttonSecondary}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   onClick={() => {
                     const url = URL.createObjectURL(new Blob([seatingCsvFor(seatingEventRows)], { type: 'text/csv;charset=utf-8' }));
@@ -1125,7 +1282,7 @@ export default function AdminPage() {
             </div>
 
             {/* Chọn Tiệc & Bộ lọc đối tượng xếp mâm */}
-            <div className={styles.card} style={{ padding: '16px 20px' }}>
+            <div className={`${styles.card} ${styles.noPrint}`} style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <strong style={{ fontSize: '0.9rem', color: '#555', marginRight: 4 }}>Chọn Tiệc cần xếp mâm:</strong>
@@ -1163,7 +1320,7 @@ export default function AdminPage() {
             </div>
 
             {/* 3 Thẻ thống kê Xếp mâm */}
-            <div className={styles.statsGrid}>
+            <div className={`${styles.statsGrid} ${styles.noPrint}`}>
               <div
                 className={`${styles.statCard} ${styles.clickableCard}`}
                 onClick={() => setSeatingAssignFilter('all')}
@@ -1207,7 +1364,7 @@ export default function AdminPage() {
                     Mỗi ô dưới đây là 1 mâm cỗ. Bạn có thể chọn thêm khách trực tiếp vào từng mâm hoặc đổi tên mâm (VD: &quot;Mâm 1 - Bạn Đại Học&quot;).
                   </p>
                 </div>
-                <form onSubmit={handleAddTable} style={{ display: 'flex', gap: 8 }}>
+                <form onSubmit={handleAddTable} className={styles.noPrint} style={{ display: 'flex', gap: 8 }}>
                   <input
                     type="text"
                     className={styles.inlineInput}
@@ -1224,8 +1381,8 @@ export default function AdminPage() {
 
               <div className={styles.tablesGrid}>
                 {allTableNames.map(tName => {
-                  const guestsInTable = seatingEventRows.filter(r => r.tableName === tName);
-                  const seatedPeople = guestsInTable.reduce((s, r) => s + guestSeatCount(r), 0);
+                  const guestsInTable = tableGuestsMap[tName] || [];
+                  const seatedPeople = tableLoadMap[tName] || 0;
                   const isFull = seatedPeople === seatsPerTable;
                   const isOver = seatedPeople > seatsPerTable;
                   const fillPct = Math.min(100, Math.round((seatedPeople / seatsPerTable) * 100));
@@ -1332,7 +1489,7 @@ export default function AdminPage() {
                       </div>
 
                       {/* Dropdown thêm nhanh khách chưa xếp mâm vào mâm này */}
-                      <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
+                      <div className={styles.noPrint} style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
                         <select
                           className={styles.inlineSelect}
                           style={{ width: '100%', padding: '7px 10px', background: '#fdfaf5', borderColor: '#d8c3a5', fontWeight: 600, color: '#59472d' }}
@@ -1361,7 +1518,7 @@ export default function AdminPage() {
             </div>
 
             {/* BẢNG DANH SÁCH KHÁCH & CHỌN MÂM 1 CHẠM */}
-            <div className={styles.card}>
+            <div className={`${styles.card} ${styles.noPrint}`}>
               <h2 className={styles.cardTitle}>
                 <span>Danh sách Khách & Gán Mâm Nhanh ({seatingFilteredRows.length} khách)</span>
               </h2>
@@ -1371,14 +1528,14 @@ export default function AdminPage() {
                   style={{ flex: '1 1 220px' }}
                   placeholder="🔍 Tìm tên khách, nhóm hoặc tên mâm..."
                   value={seatingSearch}
-                  onChange={e => setSeatingSearch(e.target.value)}
+                  onChange={e => { setSeatingSearch(e.target.value); setSeatingLimit(50); }}
                 />
-                <select className={styles.select} style={{ width: '190px' }} value={seatingAssignFilter} onChange={e => setSeatingAssignFilter(e.target.value)}>
+                <select className={styles.select} style={{ width: '190px' }} value={seatingAssignFilter} onChange={e => { setSeatingAssignFilter(e.target.value); setSeatingLimit(50); }}>
                   <option value="all">Tất cả ({seatingEventRows.length} khách)</option>
                   <option value="unassigned">⏳ Chưa xếp mâm ({unseatedEventRows.length})</option>
                   <option value="assigned">✓ Đã xếp mâm ({seatedEventRows.length})</option>
                 </select>
-                <select className={styles.select} style={{ width: '165px' }} value={seatingGroup} onChange={e => setSeatingGroup(e.target.value)}>
+                <select className={styles.select} style={{ width: '165px' }} value={seatingGroup} onChange={e => { setSeatingGroup(e.target.value); setSeatingLimit(50); }}>
                   <option value="all">Tất cả nhóm</option>
                   {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
@@ -1395,7 +1552,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {seatingFilteredRows.map((row, i) => {
+                    {seatingFilteredRows.slice(0, seatingLimit).map((row, i) => {
                       const pCount = guestSeatCount(row);
                       return (
                         <tr key={row.guestId || row.id || i} style={{ background: row.tableName ? '#fafdf9' : undefined }}>
@@ -1423,7 +1580,7 @@ export default function AdminPage() {
                             >
                               <option value="">-- Chưa xếp mâm --</option>
                               {allTableNames.map(tName => {
-                                const load = seatingEventRows.filter(r => r.tableName === tName).reduce((s, r) => s + guestSeatCount(r), 0);
+                                const load = tableLoadMap[tName] || 0;
                                 return (
                                   <option key={tName} value={tName}>
                                     🍽️ {tName} ({load}/{seatsPerTable} người)
@@ -1436,7 +1593,7 @@ export default function AdminPage() {
                           <td>
                             <div className={styles.presetGroup} style={{ marginTop: 0 }}>
                               {allTableNames.map(tName => {
-                                const load = seatingEventRows.filter(r => r.tableName === tName).reduce((s, r) => s + guestSeatCount(r), 0);
+                                const load = tableLoadMap[tName] || 0;
                                 const active = row.tableName === tName;
                                 return (
                                   <button
@@ -1474,6 +1631,19 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              {seatingFilteredRows.length > seatingLimit && (
+                <div className={styles.paginationBar}>
+                  <span>Đang hiển thị <strong>{seatingLimit}</strong> / <strong>{seatingFilteredRows.length}</strong> khách</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setSeatingLimit(l => l + 50)}>
+                      + Hiển thị thêm 50 khách
+                    </button>
+                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setSeatingLimit(seatingFilteredRows.length)}>
+                      Hiện tất cả ({seatingFilteredRows.length})
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1613,7 +1783,7 @@ export default function AdminPage() {
                 <span style={{ fontSize: '0.8rem', color: '#2e7d32', fontWeight: 500 }}>✓ Tự động lưu ngay</span>
               </h2>
               <form onSubmit={addWalkInGift}>
-                <div className={styles.formGrid} style={{ gridTemplateColumns: '1.6fr 1fr 1fr 1.2fr 1fr 1.4fr auto', gap: 10, alignItems: 'start' }}>
+                <div className={styles.walkInFormGrid}>
                   <div>
                     <input
                       className={styles.input}
@@ -1689,17 +1859,17 @@ export default function AdminPage() {
                   style={{ flex: '1 1 220px' }}
                   placeholder="🔍 Tìm tên khách, nhóm hoặc ghi chú quà..."
                   value={giftSearch}
-                  onChange={e => setGiftSearch(e.target.value)}
+                  onChange={e => { setGiftSearch(e.target.value); setGiftLimit(50); }}
                 />
-                <select className={styles.select} style={{ width: '165px' }} value={giftFilterGroup} onChange={e => setGiftFilterGroup(e.target.value)}>
+                <select className={styles.select} style={{ width: '165px' }} value={giftFilterGroup} onChange={e => { setGiftFilterGroup(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Tất cả nhóm</option>
                   {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select className={styles.select} style={{ width: '165px' }} value={giftFilterEvent} onChange={e => setGiftFilterEvent(e.target.value)}>
+                <select className={styles.select} style={{ width: '165px' }} value={giftFilterEvent} onChange={e => { setGiftFilterEvent(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Tất cả tiệc</option>
                   {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
-                <select className={styles.select} style={{ width: '185px' }} value={giftFilterMethod} onChange={e => setGiftFilterMethod(e.target.value)}>
+                <select className={styles.select} style={{ width: '185px' }} value={giftFilterMethod} onChange={e => { setGiftFilterMethod(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Mọi trạng thái mừng</option>
                   <option value="gifted">✓ Đã mừng ({giftedRows.length})</option>
                   <option value="ungifted">⏳ Chưa ghi nhận ({allRows.length - giftedRows.length})</option>
@@ -1721,7 +1891,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {giftRows.map((row, i) => {
+                    {giftRows.slice(0, giftLimit).map((row, i) => {
                       const amt = Number(row.giftAmount || 0);
                       const methodClass =
                         row.giftMethod === 'transfer' ? styles.methodTransfer :
@@ -1763,7 +1933,7 @@ export default function AdminPage() {
                                   value={amt > 0 ? amt : ''}
                                   onChange={e => {
                                     const val = Math.max(0, Number(e.target.value) || 0);
-                                    updateGuestGift(row, { giftAmount: val });
+                                    updateGuestGift(row, { giftAmount: val }, 800);
                                   }}
                                 />
                               )}
@@ -1815,7 +1985,7 @@ export default function AdminPage() {
                               className={styles.giftNoteInput}
                               placeholder="VD: 1 chỉ vàng / Trước mình mừng 1M..."
                               value={row.giftNote || ''}
-                              onChange={e => updateGuestGift(row, { giftNote: e.target.value })}
+                              onChange={e => updateGuestGift(row, { giftNote: e.target.value }, 800)}
                             />
                           </td>
 
@@ -1845,6 +2015,19 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              {giftRows.length > giftLimit && (
+                <div className={styles.paginationBar}>
+                  <span>Đang hiển thị <strong>{giftLimit}</strong> / <strong>{giftRows.length}</strong> khách</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setGiftLimit(l => l + 50)}>
+                      + Hiển thị thêm 50 khách
+                    </button>
+                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setGiftLimit(giftRows.length)}>
+                      Hiện tất cả ({giftRows.length})
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1929,22 +2112,22 @@ export default function AdminPage() {
 
             <div className={styles.card}>
               <div style={{display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap'}}>
-                <input className={styles.input} style={{flex: '1 1 200px'}} placeholder="🔍 Tìm tên khách hoặc nhóm..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                <select className={styles.select} style={{width: '165px'}} value={filterGroup} onChange={e => setFilterGroup(e.target.value)}>
+                <input className={styles.input} style={{flex: '1 1 200px'}} placeholder="🔍 Tìm tên khách hoặc nhóm..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCrmLimit(50); }} />
+                <select className={styles.select} style={{width: '165px'}} value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Tất cả nhóm</option>
                   {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select className={styles.select} style={{width: '175px'}} value={filterEvent} onChange={e => setFilterEvent(e.target.value)}>
+                <select className={styles.select} style={{width: '175px'}} value={filterEvent} onChange={e => { setFilterEvent(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Tất cả tiệc</option>
                   {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
-                <select className={styles.select} style={{width: '155px'}} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <select className={styles.select} style={{width: '155px'}} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Mọi phản hồi</option>
                   <option value="pending">Chờ phản hồi</option>
                   <option value="yes">Tham dự</option>
                   <option value="no">Không đi</option>
                 </select>
-                <select className={styles.select} style={{width: '155px'}} value={filterSent} onChange={e => setFilterSent(e.target.value)}>
+                <select className={styles.select} style={{width: '155px'}} value={filterSent} onChange={e => { setFilterSent(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Tất cả gửi thiệp</option>
                   <option value="unsent">Chưa gửi link ({unsentLinksCount})</option>
                   <option value="sent">Đã gửi link ({sentLinksCount})</option>
@@ -1964,7 +2147,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {crmRows.map((row, i) => {
+                    {crmRows.slice(0, crmLimit).map((row, i) => {
                       const isEditing = editingGuestId === row.guestId && Boolean(row.guestId);
                       const guestUrl = getGuestUrl(row);
                       return (
@@ -2116,6 +2299,19 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              {crmRows.length > crmLimit && (
+                <div className={styles.paginationBar}>
+                  <span>Đang hiển thị <strong>{crmLimit}</strong> / <strong>{crmRows.length}</strong> khách</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setCrmLimit(l => l + 50)}>
+                      + Hiển thị thêm 50 khách
+                    </button>
+                    <button type="button" className={styles.buttonSecondary} style={{ padding: '6px 14px', fontSize: '0.84rem' }} onClick={() => setCrmLimit(crmRows.length)}>
+                      Hiện tất cả ({crmRows.length})
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

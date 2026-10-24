@@ -737,3 +737,73 @@
 
 
 
+
+
+/* Responsive Walk-in Form Grid, Pagination Bar & Print Styles */
+.walkInFormGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1.2fr 1fr 1.4fr auto;
+  gap: 10px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .walkInFormGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .walkInFormGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.paginationBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eaeaea;
+  font-size: 0.88rem;
+  color: #555;
+}
+
+@media print {
+  .sidebar,
+  .noPrint,
+  .headerActions,
+  .floatingSave,
+  .tableRemoveBtn,
+  .iconBtn {
+    display: none !important;
+  }
+  .adminLayout {
+    display: block !important;
+    background: #fff !important;
+  }
+  .mainContent {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .tablesGrid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 14px !important;
+  }
+  .tableCard {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1.5px solid #444 !important;
+    box-shadow: none !important;
+  }
+  .tableGuestList {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
