@@ -40,6 +40,7 @@ export function guestRows(data) {
     const giftMethod = guest.giftMethod || 'cash';
     const giftNote = guest.giftNote || '';
     const hasGift = Boolean(giftAmount > 0 || giftNote.trim());
+    const tableName = (guest.tableName || '').trim();
     return {
       ...response,
       guestId: guest.id,
@@ -48,6 +49,7 @@ export function guestRows(data) {
       guestEventId: guest.eventId || '',
       name: response?.name || guest.guestName,
       group: guest.group || '',
+      tableName,
       sent: Boolean(guest.sent),
       giftAmount,
       giftMethod,
@@ -68,6 +70,7 @@ export function guestRows(data) {
       eventIds,
       location,
       group: '',
+      tableName: '',
       sent: true,
       giftAmount: 0,
       giftMethod: 'cash',
@@ -92,11 +95,12 @@ export function csvFor(rows) {
     return '"' + text.replaceAll('"', '""') + '"';
   };
   return '\uFEFF' + [
-    ['Khách mời', 'Nhóm', 'Tiệc', 'Đã gửi thiệp', 'Trạng thái', 'Số người', 'Tiền mừng (VNĐ)', 'Hình thức mừng', 'Ghi chú quà', 'Lời chúc', 'Mã Link'],
+    ['Khách mời', 'Nhóm', 'Tiệc', 'Mâm / Bàn', 'Đã gửi thiệp', 'Trạng thái', 'Số người', 'Tiền mừng (VNĐ)', 'Hình thức mừng', 'Ghi chú quà', 'Lời chúc', 'Mã Link'],
     ...rows.map(r => [
       r.name,
       r.group || 'Chưa phân nhóm',
       r.location,
+      r.tableName || 'Chưa xếp',
       r.sent ? 'Đã gửi' : 'Chưa gửi',
       r.attending === 'yes' ? 'Tham dự' : r.attending === 'no' ? 'Không tham dự' : 'Chưa phản hồi',
       r.count,
@@ -105,6 +109,31 @@ export function csvFor(rows) {
       r.giftNote || '',
       r.message || '',
       r.slug ? `/invite/${r.slug}` : 'Thiệp chung'
+    ])
+  ].map(row => row.map(cell).join(',')).join('\r\n');
+}
+
+export function seatingCsvFor(rows) {
+  const cell = value => {
+    let text = String(value ?? '');
+    if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  const sorted = [...rows].sort((a, b) => {
+    if (!a.tableName && b.tableName) return 1;
+    if (a.tableName && !b.tableName) return -1;
+    return (a.tableName || '').localeCompare(b.tableName || '', 'vi', { numeric: true });
+  });
+  return '\uFEFF' + [
+    ['Mâm / Bàn', 'Tên khách mời', 'Nhóm khách', 'Tiệc', 'Số người dự kiến', 'Trạng thái RSVP', 'Ghi chú'],
+    ...sorted.map(r => [
+      r.tableName || 'Chưa xếp mâm',
+      r.name,
+      r.group || 'Chưa phân nhóm',
+      r.location,
+      r.attending === 'yes' ? (r.count || 1) : 1,
+      r.attending === 'yes' ? `Tham dự (${r.count || 1} người)` : r.attending === 'no' ? 'Báo vắng' : 'Chờ phản hồi',
+      r.giftNote || ''
     ])
   ].map(row => row.map(cell).join(',')).join('\r\n');
 }

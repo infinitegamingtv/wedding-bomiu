@@ -626,4 +626,114 @@
   border-color: #333;
 }
 
+/* Seating Chart (Xếp Mâm / Bàn) */
+.tablesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 20px;
+}
+.tableCard {
+  background: #fff;
+  border-radius: 16px;
+  border: 2px solid #eaeaea;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  transition: all 0.2s;
+}
+.tableCard:hover {
+  border-color: #d8c3a5;
+}
+.tableCardFull {
+  border-color: #81c784;
+  background: #fafefb;
+}
+.tableCardOver {
+  border-color: #e57373;
+  background: #fffafa;
+}
+.tableCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.tableCardTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tableCapacityBadge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.capAvailable {
+  background: #fff8e1;
+  color: #8d6e63;
+}
+.capFull {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.capOver {
+  background: #ffebee;
+  color: #c62828;
+}
+.tableGuestList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 90px;
+  max-height: 290px;
+  overflow-y: auto;
+}
+.tableGuestItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+.tableGuestItem:hover {
+  background: #fdfaf5;
+  border-color: #e2d1b8;
+}
+.tableRemoveBtn {
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.tableRemoveBtn:hover {
+  background: #ffebee;
+  color: #c62828;
+}
+.tableBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #fdf3e7;
+  color: #9c6615;
+  border: 1px solid #f3d9b1;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+
 

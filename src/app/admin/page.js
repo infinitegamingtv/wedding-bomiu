@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './admin.module.css';
 import EventEditor from '@/components/EventEditor';
-import { guestRows, csvFor, giftCsvFor } from '@/lib/wedding';
+import { guestRows, csvFor, giftCsvFor, seatingCsvFor } from '@/lib/wedding';
 import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle, Copy, Check, Heart } from 'lucide';
 import { MorphIcon } from 'morphicons/react';
 
@@ -62,6 +62,15 @@ export default function AdminPage() {
   const [inviteTemplate, setInviteTemplate] = useState(DEFAULT_TEMPLATE);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [copiedKey, setCopiedKey] = useState('');
+
+  // Seating Chart (Xếp Mâm / Bàn) States
+  const [seatingEvent, setSeatingEvent] = useState('all');
+  const [seatingGroup, setSeatingGroup] = useState('all');
+  const [seatingStatus, setSeatingStatus] = useState('active'); // 'active' (yes + pending) | 'yes' | 'all'
+  const [seatingAssignFilter, setSeatingAssignFilter] = useState('all'); // 'all' | 'unassigned' | 'assigned'
+  const [seatingSearch, setSeatingSearch] = useState('');
+  const [newTableName, setNewTableName] = useState('');
+  const [extraTables, setExtraTables] = useState([]);
 
   // Modal State: { scope: 'all' | eventId, tab: 'yes' | 'pending' | 'no' | 'unsent' | 'sent' | 'all' }
   const [guestModal, setGuestModal] = useState(null);
@@ -508,6 +517,143 @@ export default function AdminPage() {
   const totalPending = allRows.filter(r => r.attending === 'pending').length;
   const totalDeclined = allRows.filter(r => r.attending === 'no').length;
 
+  // Seating Chart Computations & Helpers
+  const guestSeatCount = (row) => row.attending === 'yes' ? Math.max(1, Number(row.count || 1)) : 1;
+
+  const seatingEventRows = allRows.filter(r => {
+    const eventMatch = seatingEvent === 'all' || (r.eventIds && r.eventIds.includes(seatingEvent));
+    const statusMatch =
+      seatingStatus === 'all' ? true :
+      seatingStatus === 'yes' ? r.attending === 'yes' :
+      r.attending !== 'no'; // 'active' = yes + pending
+    return eventMatch && statusMatch;
+  });
+
+  const totalSeatingPeople = seatingEventRows.reduce((s, r) => s + guestSeatCount(r), 0);
+  const seatedEventRows = seatingEventRows.filter(r => Boolean(r.tableName));
+  const unseatedEventRows = seatingEventRows.filter(r => !r.tableName);
+  const totalSeatedPeople = seatedEventRows.reduce((s, r) => s + guestSeatCount(r), 0);
+  const totalUnseatedPeople = unseatedEventRows.reduce((s, r) => s + guestSeatCount(r), 0);
+
+  // Build ordered list of table names (Mâm 1..N + any custom/assigned tables)
+  const minDefaultTables = Math.max(4, Math.ceil((totalSeatingPeople || 10) / seatsPerTable));
+  const defaultTableNames = Array.from({ length: minDefaultTables }, (_, i) => `Mâm ${i + 1}`);
+  const savedCustomTables = (data.texts?.customTables || '').split('|').map(s => s.trim()).filter(Boolean);
+  const assignedTableNames = allRows.map(r => r.tableName).filter(Boolean);
+  const allTableNames = Array.from(new Set([...defaultTableNames, ...savedCustomTables, ...extraTables, ...assignedTableNames]));
+
+  const seatingFilteredRows = seatingEventRows.filter(r => {
+    const groupMatch = seatingGroup === 'all' || r.group === seatingGroup;
+    const assignMatch =
+      seatingAssignFilter === 'all' ? true :
+      seatingAssignFilter === 'unassigned' ? !r.tableName :
+      Boolean(r.tableName);
+    const q = seatingSearch.trim().toLowerCase();
+    const searchMatch = !q ||
+      r.name.toLowerCase().includes(q) ||
+      (r.group && r.group.toLowerCase().includes(q)) ||
+      (r.tableName && r.tableName.toLowerCase().includes(q));
+    return groupMatch && assignMatch && searchMatch;
+  });
+
+  const handleAddTable = (e) => {
+    if (e) e.preventDefault();
+    const name = newTableName.trim() || `Mâm ${allTableNames.length + 1}`;
+    if (!allTableNames.includes(name)) {
+      setExtraTables(prev => [...prev, name]);
+      const nextCustom = Array.from(new Set([...savedCustomTables, name])).join('|');
+      queueAutoSave(prev => ({ ...prev, texts: { ...prev.texts, customTables: nextCustom } }));
+    }
+    setNewTableName('');
+  };
+
+  const handleRenameTable = (oldName) => {
+    const nextName = prompt('Nhập tên mới cho mâm này (VD: Mâm 1 - Bạn Đại Học):', oldName);
+    if (!nextName || !nextName.trim() || nextName.trim() === oldName) return;
+    const clean = nextName.trim();
+    setExtraTables(prev => prev.map(t => t === oldName ? clean : t));
+    queueAutoSave(prev => {
+      const updatedLinks = (prev.links || []).map(l => (l.tableName || '').trim() === oldName ? { ...l, tableName: clean } : l);
+      const nextCustom = Array.from(new Set([...(prev.texts?.customTables || '').split('|').map(s => s.trim()).filter(Boolean).map(t => t === oldName ? clean : t), clean])).join('|');
+      return { ...prev, links: updatedLinks, texts: { ...prev.texts, customTables: nextCustom } };
+    });
+  };
+
+  const handleClearTable = (tName) => {
+    if (!confirm(`Gỡ toàn bộ khách khỏi "${tName}" để xếp lại?`)) return;
+    queueAutoSave(prev => ({
+      ...prev,
+      links: (prev.links || []).map(l => (l.tableName || '').trim() === tName ? { ...l, tableName: '' } : l)
+    }));
+  };
+
+  const handleAutoPackTables = () => {
+    if (!unseatedEventRows.length) {
+      alert('Tất cả khách trong danh sách đang lọc đều đã được xếp mâm!');
+      return;
+    }
+    if (!confirm(`Tự động chia ${unseatedEventRows.length} khách chưa có mâm (${totalUnseatedPeople} người) vào các mâm theo từng Nhóm (${seatsPerTable} người/mâm)?`)) return;
+
+    // Sort unassigned guests by group so friends/colleagues sit together
+    const sorted = [...unseatedEventRows].sort((a, b) => (a.group || '').localeCompare(b.group || '', 'vi'));
+    const tableLoads = {};
+    allTableNames.forEach(t => {
+      tableLoads[t] = seatingEventRows.filter(r => r.tableName === t).reduce((s, r) => s + guestSeatCount(r), 0);
+    });
+
+    const assignments = new Map();
+    let tableIndex = 1;
+    const getOrCreateTable = (neededSeats) => {
+      // First try existing tables with enough room
+      for (const tName of Object.keys(tableLoads)) {
+        if (tableLoads[tName] + neededSeats <= seatsPerTable) {
+          return tName;
+        }
+      }
+      // Otherwise create next numbered table
+      while (tableLoads[`Mâm ${tableIndex}`] !== undefined && tableLoads[`Mâm ${tableIndex}`] + neededSeats > seatsPerTable) {
+        tableIndex++;
+      }
+      const newT = `Mâm ${tableIndex}`;
+      if (tableLoads[newT] === undefined) tableLoads[newT] = 0;
+      return newT;
+    };
+
+    for (const guest of sorted) {
+      const seats = guestSeatCount(guest);
+      const targetTable = getOrCreateTable(seats);
+      tableLoads[targetTable] += seats;
+      assignments.set(guest.guestId || guest.id, targetTable);
+    }
+
+    queueAutoSave(prev => {
+      const links = [...(prev.links || [])];
+      for (const [id, tName] of assignments.entries()) {
+        const idx = links.findIndex(l => l.id === id);
+        if (idx !== -1) {
+          links[idx] = { ...links[idx], tableName: tName };
+        } else {
+          const row = sorted.find(r => (r.guestId || r.id) === id);
+          if (row) {
+            links.push({
+              id,
+              slug: 'g-' + String(id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8),
+              guestName: row.name || 'Khách mời',
+              group: row.group || 'Bạn bè',
+              eventId: row.eventIds?.[0] || prev.events?.[0]?.id || '',
+              sent: true,
+              tableName: tName,
+              giftAmount: 0,
+              giftMethod: 'cash',
+              giftNote: ''
+            });
+          }
+        }
+      }
+      return { ...prev, links };
+    });
+  };
+
   const linkRows = allRows.filter(r => Boolean(r.guestId));
   const totalLinksCount = linkRows.length;
   const sentLinksCount = linkRows.filter(r => r.sent).length;
@@ -560,6 +706,9 @@ export default function AdminPage() {
           </button>
           <button className={`${styles.navItem} ${activeTab === 'crm' ? styles.active : ''}`} onClick={() => setActiveTab('crm')}>
             <span style={{display: 'inline-flex', width: 20}}><Icon icon={Users} size={18} /></span> Khách & RSVP
+          </button>
+          <button className={`${styles.navItem} ${activeTab === 'seating' ? styles.active : ''}`} onClick={() => setActiveTab('seating')}>
+            <span style={{display: 'inline-flex', width: 20}}>🍽️</span> Xếp Mâm / Bàn
           </button>
           <button className={`${styles.navItem} ${activeTab === 'gifts' ? styles.active : ''}`} onClick={() => setActiveTab('gifts')}>
             <span style={{display: 'inline-flex', width: 20}}>💰</span> Sổ Tiền Mừng
@@ -867,6 +1016,7 @@ export default function AdminPage() {
                           <div className={styles.guestName}>
                             {guest.name}
                             {guest.group && <span className={styles.groupBadge}>{guest.group}</span>}
+                            {guest.tableName && <span className={styles.tableBadge}>🍽️ {guest.tableName}</span>}
                           </div>
                           <div className={styles.guestMeta}>
                             {guest.location && <span>Tiệc: <strong>{guest.location}</strong> • </span>}
@@ -917,6 +1067,412 @@ export default function AdminPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB MỚI: XẾP MÂM / SƠ ĐỒ BÀN TIỆC */}
+        {activeTab === 'seating' && (
+          <div>
+            <div className={styles.header}>
+              <div>
+                <h1 className={styles.pageTitle}>🍽️ Sơ Đồ Xếp Mâm / Bàn Tiệc</h1>
+                <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+                  Xem trực quan mâm nào có những khách nào, thêm/gỡ khách 1 chạm và tự động lưu ngay lập tức.
+                </p>
+              </div>
+              <div className={styles.headerActions} style={{ flexWrap: 'wrap' }}>
+                <div className={styles.seatsSelector}>
+                  <span>Số người/mâm:</span>
+                  <select
+                    value={seatsPerTable}
+                    onChange={e => {
+                      const val = Number(e.target.value);
+                      setSeatsPerTable(val);
+                      if (typeof window !== 'undefined') localStorage.setItem('wedding_seats_per_table', String(val));
+                    }}
+                  >
+                    <option value={6}>6 người / mâm</option>
+                    <option value={8}>8 người / mâm</option>
+                    <option value={10}>10 người / mâm</option>
+                    <option value={12}>12 người / mâm</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  className={styles.buttonSecondary}
+                  onClick={handleAutoPackTables}
+                  title="Tự động chia các khách chưa có mâm vào các bàn theo từng Nhóm"
+                >
+                  ⚡ Tự động gợi ý xếp mâm
+                </button>
+                <button
+                  type="button"
+                  className={styles.buttonSecondary}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => {
+                    const url = URL.createObjectURL(new Blob([seatingCsvFor(seatingEventRows)], { type: 'text/csv;charset=utf-8' }));
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'so-do-mam-tiec.csv';
+                    a.click();
+                  }}
+                >
+                  <Icon icon={Download} size={16} /> Xuất Sơ Đồ Mâm ({seatingEventRows.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Chọn Tiệc & Bộ lọc đối tượng xếp mâm */}
+            <div className={styles.card} style={{ padding: '16px 20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: '0.9rem', color: '#555', marginRight: 4 }}>Chọn Tiệc cần xếp mâm:</strong>
+                  <button
+                    type="button"
+                    className={`${styles.modalTab} ${seatingEvent === 'all' ? styles.modalTabActive : ''}`}
+                    onClick={() => setSeatingEvent('all')}
+                  >
+                    Tất cả tiệc ({allRows.filter(r => r.attending !== 'no').length})
+                  </button>
+                  {data.events.map(ev => {
+                    const cnt = allRows.filter(r => r.attending !== 'no' && r.eventIds && r.eventIds.includes(ev.id)).length;
+                    return (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        className={`${styles.modalTab} ${seatingEvent === ev.id ? styles.modalTabActive : ''}`}
+                        onClick={() => setSeatingEvent(ev.id)}
+                      >
+                        {ev.name} ({cnt})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#666' }}>Đối tượng:</span>
+                  <select className={styles.inlineSelect} value={seatingStatus} onChange={e => setSeatingStatus(e.target.value)}>
+                    <option value="active">Khách Tham dự + Chờ phản hồi</option>
+                    <option value="yes">Chỉ khách đã xác nhận Tham dự</option>
+                    <option value="all">Tất cả (Gồm cả Báo vắng)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* 3 Thẻ thống kê Xếp mâm */}
+            <div className={styles.statsGrid}>
+              <div
+                className={`${styles.statCard} ${styles.clickableCard}`}
+                onClick={() => setSeatingAssignFilter('all')}
+              >
+                <h3>{totalSeatingPeople} <span style={{ fontSize: '1.1rem', color: '#888', fontWeight: 500 }}>người</span></h3>
+                <p>Tổng khách cần xếp ({seatingEventRows.length} đơn)</p>
+                <span className={styles.tableEstBadge}>🍽️ Dự kiến: {formatTables(totalSeatingPeople)}</span>
+              </div>
+
+              <div
+                className={`${styles.statCard} ${styles.highlight} ${styles.clickableCard}`}
+                onClick={() => setSeatingAssignFilter('assigned')}
+              >
+                <h3 style={{ color: '#2e7d32' }}>{totalSeatedPeople} <span style={{ fontSize: '1.1rem', color: '#888', fontWeight: 500 }}>người</span></h3>
+                <p>Đã xếp vào mâm ({seatedEventRows.length} khách)</p>
+                <span className={styles.cardHint}>👉 Bấm để lọc khách đã có mâm</span>
+              </div>
+
+              <div
+                className={`${styles.statCard} ${styles.clickableCard}`}
+                onClick={() => setSeatingAssignFilter('unassigned')}
+              >
+                <h3 style={{ color: totalUnseatedPeople > 0 ? '#e65100' : '#2e7d32' }}>
+                  {totalUnseatedPeople} <span style={{ fontSize: '1.1rem', color: '#888', fontWeight: 500 }}>người</span>
+                </h3>
+                <p>Chưa xếp mâm ({unseatedEventRows.length} khách)</p>
+                <span className={styles.cardHint}>
+                  {totalUnseatedPeople > 0 ? '👉 Bấm để lọc khách chưa có mâm' : '✓ Đã xếp mâm 100% khách!'}
+                </span>
+              </div>
+            </div>
+
+            {/* SƠ ĐỒ CÁC MÂM TRỰC QUAN: MÂM NÀO CÓ NHỮNG KHÁCH NÀO */}
+            <div className={styles.card}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+                <div>
+                  <h2 className={styles.cardTitle} style={{ marginBottom: 4 }}>
+                    Sơ Đồ Các Mâm ({allTableNames.length} mâm)
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#777' }}>
+                    Mỗi ô dưới đây là 1 mâm cỗ. Bạn có thể chọn thêm khách trực tiếp vào từng mâm hoặc đổi tên mâm (VD: &quot;Mâm 1 - Bạn Đại Học&quot;).
+                  </p>
+                </div>
+                <form onSubmit={handleAddTable} style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    className={styles.inlineInput}
+                    style={{ width: 210 }}
+                    placeholder={`VD: Mâm ${allTableNames.length + 1} - Đồng nghiệp`}
+                    value={newTableName}
+                    onChange={e => setNewTableName(e.target.value)}
+                  />
+                  <button type="submit" className={styles.buttonPrimary} style={{ padding: '8px 14px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                    + Thêm Mâm Mới
+                  </button>
+                </form>
+              </div>
+
+              <div className={styles.tablesGrid}>
+                {allTableNames.map(tName => {
+                  const guestsInTable = seatingEventRows.filter(r => r.tableName === tName);
+                  const seatedPeople = guestsInTable.reduce((s, r) => s + guestSeatCount(r), 0);
+                  const isFull = seatedPeople === seatsPerTable;
+                  const isOver = seatedPeople > seatsPerTable;
+                  const fillPct = Math.min(100, Math.round((seatedPeople / seatsPerTable) * 100));
+
+                  const cardStateClass = isOver
+                    ? styles.tableCardOver
+                    : isFull
+                    ? styles.tableCardFull
+                    : '';
+
+                  const capBadgeClass = isOver
+                    ? styles.capOver
+                    : isFull
+                    ? styles.capFull
+                    : styles.capAvailable;
+
+                  const capText = isOver
+                    ? `${seatedPeople}/${seatsPerTable} người (Quá ${seatedPeople - seatsPerTable})`
+                    : isFull
+                    ? `${seatedPeople}/${seatsPerTable} người (Đủ mâm)`
+                    : `${seatedPeople}/${seatsPerTable} người (Trống ${seatsPerTable - seatedPeople})`;
+
+                  return (
+                    <div key={tName} className={`${styles.tableCard} ${cardStateClass}`}>
+                      <div className={styles.tableCardHeader}>
+                        <div className={styles.tableCardTitle}>
+                          <span>🍽️ {tName}</span>
+                          <button
+                            type="button"
+                            className={styles.iconBtn}
+                            style={{ padding: '2px 6px', fontSize: '0.72rem', border: 'none', background: 'transparent' }}
+                            title="Đổi tên mâm này"
+                            onClick={() => handleRenameTable(tName)}
+                          >
+                            ✏️
+                          </button>
+                          {guestsInTable.length > 0 && (
+                            <button
+                              type="button"
+                              className={styles.iconBtn}
+                              style={{ padding: '2px 6px', fontSize: '0.72rem', border: 'none', background: 'transparent', color: '#c62828' }}
+                              title="Gỡ toàn bộ khách khỏi mâm này"
+                              onClick={() => handleClearTable(tName)}
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                        <span className={`${styles.tableCapacityBadge} ${capBadgeClass}`}>
+                          {capText}
+                        </span>
+                      </div>
+
+                      <div className={styles.progressBarTrack} style={{ height: 6, marginTop: 0 }}>
+                        <div
+                          className={styles.progressBarFill}
+                          style={{
+                            width: `${fillPct}%`,
+                            background: isOver ? '#e53935' : isFull ? '#2e7d32' : '#C5A880'
+                          }}
+                        />
+                      </div>
+
+                      <div className={styles.tableGuestList}>
+                        {guestsInTable.length === 0 ? (
+                          <div style={{ color: '#aaa', fontSize: '0.83rem', textAlign: 'center', padding: '24px 8px', border: '1px dashed #eee', borderRadius: 8 }}>
+                            Chưa có khách nào ở {tName}.<br />Chọn khách ở menu bên dưới để xếp vào mâm.
+                          </div>
+                        ) : (
+                          guestsInTable.map((g, idx) => {
+                            const pCount = guestSeatCount(g);
+                            return (
+                              <div key={g.guestId || g.id || idx} className={styles.tableGuestItem}>
+                                <div style={{ minWidth: 0, flex: 1 }}>
+                                  <div style={{ fontWeight: 600, color: '#333', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                                    <span>{idx + 1}. {g.name}</span>
+                                    {g.group && <span className={styles.groupBadge} style={{ marginLeft: 0 }}>{g.group}</span>}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#777', marginTop: 2 }}>
+                                    {g.attending === 'yes' ? (
+                                      <span style={{ color: '#2e7d32', fontWeight: 600 }}>✓ Tham dự ({pCount} người)</span>
+                                    ) : (
+                                      <span style={{ color: '#856404' }}>⏳ Chờ phản hồi (Dự kiến {pCount} người)</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span className={`${styles.badge} ${styles.neutral}`} style={{ fontSize: '0.75rem' }}>
+                                    {pCount} người
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className={styles.tableRemoveBtn}
+                                    title="Gỡ khách này khỏi mâm"
+                                    onClick={() => updateGuestGift(g, { tableName: '' })}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* Dropdown thêm nhanh khách chưa xếp mâm vào mâm này */}
+                      <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
+                        <select
+                          className={styles.inlineSelect}
+                          style={{ width: '100%', padding: '7px 10px', background: '#fdfaf5', borderColor: '#d8c3a5', fontWeight: 600, color: '#59472d' }}
+                          value=""
+                          onChange={e => {
+                            const targetId = e.target.value;
+                            if (!targetId) return;
+                            const targetRow = unseatedEventRows.find(r => (r.guestId || r.id) === targetId);
+                            if (targetRow) {
+                              updateGuestGift(targetRow, { tableName: tName });
+                            }
+                          }}
+                        >
+                          <option value="">+ Thêm khách chưa xếp vào {tName} ({unseatedEventRows.length})...</option>
+                          {unseatedEventRows.map(u => (
+                            <option key={u.guestId || u.id} value={u.guestId || u.id}>
+                              {u.name} ({guestSeatCount(u)} người{u.group ? ` • ${u.group}` : ''})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* BẢNG DANH SÁCH KHÁCH & CHỌN MÂM 1 CHẠM */}
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>
+                <span>Danh sách Khách & Gán Mâm Nhanh ({seatingFilteredRows.length} khách)</span>
+              </h2>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <input
+                  className={styles.input}
+                  style={{ flex: '1 1 220px' }}
+                  placeholder="🔍 Tìm tên khách, nhóm hoặc tên mâm..."
+                  value={seatingSearch}
+                  onChange={e => setSeatingSearch(e.target.value)}
+                />
+                <select className={styles.select} style={{ width: '190px' }} value={seatingAssignFilter} onChange={e => setSeatingAssignFilter(e.target.value)}>
+                  <option value="all">Tất cả ({seatingEventRows.length} khách)</option>
+                  <option value="unassigned">⏳ Chưa xếp mâm ({unseatedEventRows.length})</option>
+                  <option value="assigned">✓ Đã xếp mâm ({seatedEventRows.length})</option>
+                </select>
+                <select className={styles.select} style={{ width: '165px' }} value={seatingGroup} onChange={e => setSeatingGroup(e.target.value)}>
+                  <option value="all">Tất cả nhóm</option>
+                  {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Khách mời & Nhóm</th>
+                      <th>Số người</th>
+                      <th>Mâm hiện tại</th>
+                      <th>Bấm chọn Mâm nhanh (1 chạm)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {seatingFilteredRows.map((row, i) => {
+                      const pCount = guestSeatCount(row);
+                      return (
+                        <tr key={row.guestId || row.id || i} style={{ background: row.tableName ? '#fafdf9' : undefined }}>
+                          <td style={{ minWidth: 200 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                              <strong>{row.name}</strong>
+                              {row.group && <span className={styles.groupBadge}>{row.group}</span>}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#777', marginTop: 3 }}>
+                              Tiệc: {row.location}
+                            </div>
+                          </td>
+
+                          <td>
+                            <span className={`${styles.badge} ${row.attending === 'yes' ? styles.success : styles.warning}`}>
+                              {row.attending === 'yes' ? `Đi ${pCount} người` : `Chờ RSVP (${pCount})`}
+                            </span>
+                          </td>
+
+                          <td style={{ minWidth: 150 }}>
+                            <select
+                              className={`${styles.methodSelect} ${row.tableName ? styles.methodCash : ''}`}
+                              value={row.tableName || ''}
+                              onChange={e => updateGuestGift(row, { tableName: e.target.value })}
+                            >
+                              <option value="">-- Chưa xếp mâm --</option>
+                              {allTableNames.map(tName => {
+                                const load = seatingEventRows.filter(r => r.tableName === tName).reduce((s, r) => s + guestSeatCount(r), 0);
+                                return (
+                                  <option key={tName} value={tName}>
+                                    🍽️ {tName} ({load}/{seatsPerTable} người)
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </td>
+
+                          <td>
+                            <div className={styles.presetGroup} style={{ marginTop: 0 }}>
+                              {allTableNames.map(tName => {
+                                const load = seatingEventRows.filter(r => r.tableName === tName).reduce((s, r) => s + guestSeatCount(r), 0);
+                                const active = row.tableName === tName;
+                                return (
+                                  <button
+                                    key={tName}
+                                    type="button"
+                                    className={`${styles.presetChip} ${active ? styles.presetChipActive : ''}`}
+                                    onClick={() => updateGuestGift(row, { tableName: active ? '' : tName })}
+                                    title={`${tName}: Đang có ${load}/${seatsPerTable} người`}
+                                  >
+                                    {tName} <span style={{ opacity: 0.8, fontWeight: 400 }}>({load}/{seatsPerTable})</span>
+                                  </button>
+                                );
+                              })}
+                              {row.tableName && (
+                                <button
+                                  type="button"
+                                  className={styles.presetChipClear}
+                                  onClick={() => updateGuestGift(row, { tableName: '' })}
+                                >
+                                  ✕ Bỏ mâm
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!seatingFilteredRows.length && (
+                      <tr>
+                        <td colSpan="4" style={{ textAlign: 'center', color: '#888', padding: '24px' }}>
+                          Không có khách nào phù hợp với bộ lọc.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1450,6 +2006,7 @@ export default function AdminPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
                                   <strong>{row.name}</strong>
                                   {row.group && <span className={styles.groupBadge}>{row.group}</span>}
+                                  {row.tableName && <span className={styles.tableBadge}>🍽️ {row.tableName}</span>}
                                   {row.legacy && <span className={`${styles.badge} ${styles.neutral}`}>Tự RSVP</span>}
                                 </div>
                                 <div style={{ fontSize: '0.78rem', color: '#888', marginTop: 3 }}>
