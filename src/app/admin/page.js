@@ -1256,7 +1256,7 @@ export default function AdminPage() {
               <div>
                 <h1 className={styles.pageTitle}>Sơ Đồ Xếp Mâm / Bàn Tiệc</h1>
                 <p style={{ color: '#777', margin: '4px 0 0 0', fontSize: '0.88rem' }}>
-                  Chọn khách từ cột bên trái để đưa vào các mâm bên phải (Tự động lưu ngay lập tức).
+                  Thêm khách trực tiếp trên từng thẻ Mâm hoặc chọn mâm ở danh sách khách phía cuối trang (Tự động lưu).
                 </p>
               </div>
               <div className={styles.headerActions} style={{ flexWrap: 'wrap' }}>
@@ -1352,110 +1352,9 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* BỐ CỤC 2 CỘT: CỘT TRÁI (KHÁCH CHƯA XẾP) — CỘT PHẢI (SƠ ĐỒ CÁC MÂM) */}
+            {/* PHẦN 1 (TRÊN CÙNG): SƠ ĐỒ CÁC MÂM TOÀN MÀN HÌNH — PHẦN 2 (CUỐI CÙNG): DANH SÁCH KHÁCH */}
             <div className={styles.seatingWorkspace}>
-              {/* CỘT TRÁI: DANH SÁCH KHÁCH GỌN GÀNG */}
-              <aside className={`${styles.unassignedPanel} ${styles.noPrint}`}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#222' }}>
-                    Danh sách khách ({seatingFilteredRows.length})
-                  </h3>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button
-                      type="button"
-                      className={`${styles.miniFilterBtn} ${seatingAssignFilter === 'unassigned' ? styles.miniFilterBtnActive : ''}`}
-                      onClick={() => setSeatingAssignFilter(seatingAssignFilter === 'unassigned' ? 'all' : 'unassigned')}
-                    >
-                      Chưa xếp ({unseatedEventRows.length})
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.miniFilterBtn} ${seatingAssignFilter === 'all' ? styles.miniFilterBtnActive : ''}`}
-                      onClick={() => setSeatingAssignFilter('all')}
-                    >
-                      Tất cả ({seatingEventRows.length})
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                  <input
-                    className={styles.inlineInput}
-                    placeholder="Tìm tên khách..."
-                    value={seatingSearch}
-                    onChange={e => { setSeatingSearch(e.target.value); setSeatingLimit(50); }}
-                  />
-                  <select
-                    className={styles.inlineSelect}
-                    style={{ maxWidth: 115 }}
-                    value={seatingGroup}
-                    onChange={e => { setSeatingGroup(e.target.value); setSeatingLimit(50); }}
-                  >
-                    <option value="all">Mọi nhóm</option>
-                    {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-
-                <div className={styles.unassignedList}>
-                  {seatingFilteredRows.slice(0, seatingLimit).map((row, i) => {
-                    const pCount = guestSeatCount(row);
-                    return (
-                      <div key={row.guestId || row.id || i} className={`${styles.unassignedItem} ${row.tableName ? styles.unassignedItemSeated : ''}`}>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#222', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                            <span>{row.name}</span>
-                            {row.group && <span className={styles.groupBadge} style={{ marginLeft: 0, fontSize: '0.7rem', padding: '1px 6px' }}>{row.group}</span>}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#777', marginTop: 2 }}>
-                            {row.attending === 'yes' ? (
-                              <span style={{ color: '#2e7d32', fontWeight: 600 }}>Đi {pCount} người</span>
-                            ) : (
-                              <span>Dự kiến {pCount} người</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <select
-                          className={`${styles.compactTableSelect} ${row.tableName ? styles.compactTableSelectActive : ''}`}
-                          value={row.tableName || ''}
-                          onChange={e => updateGuestGift(row, { tableName: e.target.value })}
-                        >
-                          <option value="">+ Chọn mâm...</option>
-                          {allTableNames.map(tName => {
-                            const load = tableLoadMap[tName] || 0;
-                            return (
-                              <option key={tName} value={tName}>
-                                {tName} ({load}/{seatsPerTable})
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-                    );
-                  })}
-
-                  {!seatingFilteredRows.length && (
-                    <div style={{ textAlign: 'center', color: '#999', padding: '28px 12px', fontSize: '0.85rem' }}>
-                      {seatingAssignFilter === 'unassigned'
-                        ? '✓ Tất cả khách đã được xếp vào mâm!'
-                        : 'Không tìm thấy khách nào phù hợp.'}
-                    </div>
-                  )}
-
-                  {seatingFilteredRows.length > seatingLimit && (
-                    <button
-                      type="button"
-                      className={styles.buttonSecondary}
-                      style={{ width: '100%', padding: '7px', fontSize: '0.8rem', marginTop: 6 }}
-                      onClick={() => setSeatingLimit(l => l + 50)}
-                    >
-                      + Xem thêm ({seatingFilteredRows.length - seatingLimit} khách)
-                    </button>
-                  )}
-                </div>
-              </aside>
-
-              {/* CỘT PHẢI: SƠ ĐỒ CÁC MÂM */}
+              {/* TRÊN: SƠ ĐỒ CÁC MÂM */}
               <div className={styles.tablesPanel}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
                   <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#222' }}>
@@ -1604,6 +1503,109 @@ export default function AdminPage() {
                   })}
                 </div>
               </div>
+
+              {/* CUỐI TRANG: DANH SÁCH KHÁCH */}
+              <section className={`${styles.unassignedPanel} ${styles.noPrint}`}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#222' }}>
+                      Danh sách khách ({seatingFilteredRows.length})
+                    </h3>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button
+                        type="button"
+                        className={`${styles.miniFilterBtn} ${seatingAssignFilter === 'unassigned' ? styles.miniFilterBtnActive : ''}`}
+                        onClick={() => setSeatingAssignFilter(seatingAssignFilter === 'unassigned' ? 'all' : 'unassigned')}
+                      >
+                        Chưa xếp ({unseatedEventRows.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.miniFilterBtn} ${seatingAssignFilter === 'all' ? styles.miniFilterBtnActive : ''}`}
+                        onClick={() => setSeatingAssignFilter('all')}
+                      >
+                        Tất cả ({seatingEventRows.length})
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, flex: '1 1 280px', maxWidth: 420 }}>
+                    <input
+                      className={styles.inlineInput}
+                      placeholder="Tìm tên khách..."
+                      value={seatingSearch}
+                      onChange={e => { setSeatingSearch(e.target.value); setSeatingLimit(50); }}
+                    />
+                    <select
+                      className={styles.inlineSelect}
+                      style={{ maxWidth: 140 }}
+                      value={seatingGroup}
+                      onChange={e => { setSeatingGroup(e.target.value); setSeatingLimit(50); }}
+                    >
+                      <option value="all">Mọi nhóm</option>
+                      {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.unassignedList}>
+                  {seatingFilteredRows.slice(0, seatingLimit).map((row, i) => {
+                    const pCount = guestSeatCount(row);
+                    return (
+                      <div key={row.guestId || row.id || i} className={`${styles.unassignedItem} ${row.tableName ? styles.unassignedItemSeated : ''}`}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#222', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                            <span>{row.name}</span>
+                            {row.group && <span className={styles.groupBadge} style={{ marginLeft: 0, fontSize: '0.7rem', padding: '1px 6px' }}>{row.group}</span>}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#777', marginTop: 2 }}>
+                            {row.attending === 'yes' ? (
+                              <span style={{ color: '#2e7d32', fontWeight: 600 }}>Đi {pCount} người</span>
+                            ) : (
+                              <span>Dự kiến {pCount} người</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <select
+                          className={`${styles.compactTableSelect} ${row.tableName ? styles.compactTableSelectActive : ''}`}
+                          value={row.tableName || ''}
+                          onChange={e => updateGuestGift(row, { tableName: e.target.value })}
+                        >
+                          <option value="">+ Chọn mâm...</option>
+                          {allTableNames.map(tName => {
+                            const load = tableLoadMap[tName] || 0;
+                            return (
+                              <option key={tName} value={tName}>
+                                {tName} ({load}/{seatsPerTable})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!seatingFilteredRows.length && (
+                  <div style={{ textAlign: 'center', color: '#999', padding: '24px 12px', fontSize: '0.88rem' }}>
+                    {seatingAssignFilter === 'unassigned'
+                      ? '✓ Tất cả khách đã được xếp vào mâm!'
+                      : 'Không tìm thấy khách nào phù hợp.'}
+                  </div>
+                )}
+
+                {seatingFilteredRows.length > seatingLimit && (
+                  <button
+                    type="button"
+                    className={styles.buttonSecondary}
+                    style={{ width: '100%', padding: '8px', fontSize: '0.84rem', marginTop: 12 }}
+                    onClick={() => setSeatingLimit(l => l + 50)}
+                  >
+                    + Xem thêm ({seatingFilteredRows.length - seatingLimit} khách)
+                  </button>
+                )}
+              </section>
             </div>
           </div>
         )}
