@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './admin.module.css';
 import EventEditor from '@/components/EventEditor';
 import { guestRows, csvFor, giftCsvFor, seatingCsvFor } from '@/lib/wedding';
-import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, MessageCircle, Copy, Check, Heart, Utensils, Wallet, Pencil } from 'lucide';
+import { LogOut, LayoutDashboard, Users, PenTool, Image as ImageIcon, Save, Link as LinkIcon, Download, Plus, Trash2, Copy, Check, Heart, Utensils, Wallet, Pencil } from 'lucide';
 import { MorphIcon } from 'morphicons/react';
 
 const Icon = ({ icon, size = 18, ...props }) => <MorphIcon icon={icon} size={size} {...props} />;
@@ -479,19 +479,6 @@ export default function AdminPage() {
     navigator.clipboard.writeText(url);
     setCopiedKey(`link-${row.guestId}`);
     setTimeout(() => setCopiedKey(''), 2000);
-  };
-
-  const shareZalo = (row) => {
-    const url = getGuestUrl(row);
-    if (!url) return;
-    const msg = (inviteTemplate || DEFAULT_TEMPLATE)
-      .replaceAll('{name}', row.name)
-      .replaceAll('{link}', url);
-    navigator.clipboard.writeText(msg);
-    if (!row.sent && row.guestId) {
-      toggleGuestSent(row.guestId, true);
-    }
-    window.open(`https://zalo.me/share?url=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer');
   };
 
   const deleteRsvp = async id => {
@@ -2214,7 +2201,7 @@ export default function AdminPage() {
                           <td>
                             {row.guestId ? (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <div>
                                   <button
                                     type="button"
                                     className={`${styles.buttonCopyInvite} ${copiedKey === `msg-${row.guestId}` ? styles.buttonCopySuccess : ''}`}
@@ -2223,15 +2210,6 @@ export default function AdminPage() {
                                   >
                                     <Icon icon={copiedKey === `msg-${row.guestId}` ? Check : Copy} size={14} />
                                     {copiedKey === `msg-${row.guestId}` ? 'Đã copy lời mời!' : 'Copy Lời mời + Link'}
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    className={styles.buttonZalo}
-                                    onClick={() => shareZalo(row)}
-                                    title="Copy lời mời và mở chia sẻ Zalo"
-                                  >
-                                    <Icon icon={MessageCircle} size={14} /> Zalo
                                   </button>
                                 </div>
                                 <div className={styles.linkBox}>
