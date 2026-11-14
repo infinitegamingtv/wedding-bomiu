@@ -367,6 +367,7 @@ function LazyMap({ src, title, className, style }) {
 
 export default function InvitationUI({ data, guestName, guestSlug, initialEventId }) {
   let { invitation, albums = [], stories = [], events = [], rsvps = [], texts = {} } = data;
+  const isThankYou = texts.thankYouMode === '1' || texts.thankYouMode === true;
   const [opened, setOpened] = useState(false);
   const [bursting, setBursting] = useState(false);
   const [giftOpened, setGiftOpened] = useState(false);
@@ -568,12 +569,12 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           {invitation.logoUrl && <Image className={styles.cardLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} priority sizes="(max-width: 700px) 220px, 280px" />}
           <h1 className={styles.envNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
           {validDate && <p className={styles.envelopeDate}>{formatDate(date).replaceAll('/', ' — ')}</p>}
-          <div className={styles.envTo}><span>Thân mời</span><strong>{guestName || 'Quý khách'}</strong></div>
+          <div className={styles.envTo}><span>{isThankYou ? 'Thân gửi lời cảm ơn tới' : 'Thân mời'}</span><strong>{guestName || 'Quý khách'}</strong></div>
           <button className={styles.primaryButton} onClick={() => { 
             setBursting(true); 
             setPlaying(true); 
             setTimeout(() => setOpened(true), 400); 
-          }}>Mở thiệp</button>
+          }}>{isThankYou ? 'Mở thư cảm ơn' : 'Mở thiệp'}</button>
           
           {bursting && <div className={styles.heartBurst} aria-hidden="true">
             {Array.from({ length: 30 }).map((_, i) => (
@@ -587,52 +588,68 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
 
       {/* MAIN WEBSITE CONTENT */}
       <div style={{ height: opened ? 'auto' : '100vh', overflow: opened ? 'visible' : 'hidden' }}>
-        <a className={styles.skipLink} href="#rsvp">Đến phần xác nhận tham dự</a>
+        <a className={styles.skipLink} href="#rsvp">{isThankYou ? 'Đến phần gửi lời chúc' : 'Đến phần xác nhận tham dự'}</a>
         {opened && <div className={styles.flowers} aria-hidden="true">{flowerItems.map((style, index) => <span key={index} style={style}>✿</span>)}</div>}
         <nav className={styles.navBar} aria-label="Các phần của thiệp">
-          <a href="#invite"><InteractiveIcon defaultIcon={Mail} hoverIcon={MailOpen} /> Lời mời</a>
+          <a href="#invite"><InteractiveIcon defaultIcon={Mail} hoverIcon={MailOpen} /> {isThankYou ? 'Cảm ơn' : 'Lời mời'}</a>
           {stories.length > 0 && <a href="#story"><InteractiveIcon defaultIcon={BookHeart} /> Chuyện mình</a>}
           {albums.length > 0 && <a href="#gallery"><InteractiveIcon defaultIcon={ImageIcon} /> Ảnh cưới</a>}
-          <a href="#rsvp" className={styles.navCta}><InteractiveIcon defaultIcon={CalendarCheck} /> Tham dự</a>
+          <a href={isThankYou ? '#guestbook' : '#rsvp'} className={styles.navCta}><InteractiveIcon defaultIcon={CalendarCheck} /> {isThankYou ? 'Lưu bút' : 'Tham dự'}</a>
         </nav>
         <main className={styles.mainContent}>
         <section id="hero" className={styles.hero}>
           {invitation.heroBgUrl && <Image className={styles.heroBgImage} src={invitation.heroBgUrl} alt="" fill quality={90} sizes="100vw" />}
           <div className={styles.heroContent}>
             {invitation.logoUrl && <Image className={styles.heroLogo} src={invitation.logoUrl} alt="Logo" width={600} height={400} sizes="(max-width: 700px) 220px, 320px" />}
-            <p className={styles.eyebrow}>{texts.heroSubtitle || 'Lễ Thành Hôn'}</p>
+            <p className={styles.eyebrow}>{isThankYou ? 'TRỌN VẸN NGÀY VUI' : (texts.heroSubtitle || 'Lễ Thành Hôn')}</p>
             <h1 ref={heading} tabIndex={-1} className={styles.heroNames}>{invitation.groom?.replace(/ /g, '\u00A0')}<span>&</span>{invitation.bride?.replace(/ /g, '\u00A0')}</h1>
             {validDate && <p className={styles.heroDate}>{formatDate(date).replaceAll('/', ' \u2022 ')}</p>}
-            {validDate && <Countdown date={date} />}
-            <p className={styles.heroLocation}>{selectedEvent.venue || selectedEvent.name}</p>
-            <a className={styles.heroCta} href="#invite">Cùng chung vui <InteractiveIcon defaultIcon={ArrowDown} hoverIcon={ArrowDown} size={16} style={{ marginLeft: 8 }} /></a>
+            {validDate && !isThankYou && <Countdown date={date} />}
+            <p className={styles.heroLocation}>
+              {isThankYou ? 'Cảm ơn bạn đã cùng chúng mình tạo nên kỷ niệm đẹp' : (selectedEvent.venue || selectedEvent.name)}
+            </p>
+            <a className={styles.heroCta} href="#invite">{isThankYou ? 'Xem lời cảm ơn' : 'Cùng chung vui'} <InteractiveIcon defaultIcon={ArrowDown} hoverIcon={ArrowDown} size={16} style={{ marginLeft: 8 }} /></a>
           </div>
           <span className={styles.heroCaption}>HÀNH TRÌNH MỚI, CÙNG NHAU</span>
         </section>
 
         <FadeInSection id="invite">
-
-        <div className={styles.eventPickerContainer}>
-          <h2 className={styles.pickerTitle}>Bạn sẽ chung vui cùng chúng mình tại đâu?</h2>
-          <div className={styles.eventPicker} role="group" aria-label="Chọn tiệc cưới">
-            {events.map(event => {
-              const mainDate = weddingDate(event.date);
-              const subDate = event.subEvents?.[0] ? weddingDate(event.subEvents[0].date) : null;
-              const dateToShow = Number.isFinite(mainDate.getTime()) ? mainDate : (Number.isFinite(subDate?.getTime()) ? subDate : null);
-              return (
-                <button key={event.id} className={event.id === selectedEvent.id ? styles.primaryButton : styles.secondaryButton} aria-pressed={event.id === selectedEvent.id} onClick={() => { setActiveTabId(event.id); if (!rsvpSelectionEdited.current) setForm(previous => ({ ...previous, eventIds: [event.id] })); if (hasReply) setStatus('idle'); }}>
-                  <strong>{event.name}</strong>
-                  {dateToShow && <small>{formatDate(dateToShow)}</small>}
-                </button>
-              );
-            })}
+        {!isThankYou && (
+          <div className={styles.eventPickerContainer}>
+            <h2 className={styles.pickerTitle}>Bạn sẽ chung vui cùng chúng mình tại đâu?</h2>
+            <div className={styles.eventPicker} role="group" aria-label="Chọn tiệc cưới">
+              {events.map(event => {
+                const mainDate = weddingDate(event.date);
+                const subDate = event.subEvents?.[0] ? weddingDate(event.subEvents[0].date) : null;
+                const dateToShow = Number.isFinite(mainDate.getTime()) ? mainDate : (Number.isFinite(subDate?.getTime()) ? subDate : null);
+                return (
+                  <button key={event.id} className={event.id === selectedEvent.id ? styles.primaryButton : styles.secondaryButton} aria-pressed={event.id === selectedEvent.id} onClick={() => { setActiveTabId(event.id); if (!rsvpSelectionEdited.current) setForm(previous => ({ ...previous, eventIds: [event.id] })); if (hasReply) setStatus('idle'); }}>
+                    <strong>{event.name}</strong>
+                    {dateToShow && <small>{formatDate(dateToShow)}</small>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-          <p className={styles.eyebrow}>NGÀY VUI CỦA CHÚNG MÌNH</p>
-          <h2 className={styles.sectionTitle}>{texts.inviteTitle || 'Trân Trọng Kính Mời'}</h2>
+          <p className={styles.eyebrow}>{isThankYou ? 'LỜI TRI ÂN TỪ ĐÁY LÒNG' : 'NGÀY VUI CỦA CHÚNG MÌNH'}</p>
+          <h2 className={styles.sectionTitle}>
+            {isThankYou ? (texts.thankYouTitle || 'Chân Thành Cảm Ơn') : (texts.inviteTitle || 'Trân Trọng Kính Mời')}
+          </h2>
           {guestName && <p className={styles.guestName}>{guestName}</p>}
-          <p className={styles.intro}>{texts.inviteGreeting || 'Tới dự bữa tiệc chung vui cùng gia đình chúng tôi'}</p>
+          <p className={styles.intro} style={isThankYou ? { maxWidth: 660, margin: '14px auto 24px', lineHeight: 1.75 } : undefined}>
+            {isThankYou
+              ? (texts.thankYouMessage || 'Cảm ơn bạn đã dành thời gian quý báu đến chung vui và gửi những lời chúc tốt đẹp nhất tới gia đình chúng mình. Sự hiện diện và tình cảm của bạn là niềm hạnh phúc lớn lao trong ngày trọng đại của hai vợ chồng!')
+              : (texts.inviteGreeting || 'Tới dự bữa tiệc chung vui cùng gia đình chúng tôi')}
+          </p>
+          {isThankYou && texts.thankYouAlbumUrl && (
+            <div className={styles.actions} style={{ justifyContent: 'center', marginBottom: 28 }}>
+              <a className={styles.primaryButton} href={texts.thankYouAlbumUrl} target="_blank" rel="noreferrer">
+                Xem trọn bộ ảnh ngày cưới &rarr;
+              </a>
+            </div>
+          )}
           {(invitation.groomBio || invitation.brideBio || invitation.groomAvatarUrl || invitation.brideAvatarUrl) && (
             <div className={styles.coupleProfiles}>
               <div>
@@ -653,54 +670,55 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
             <div>{brideDeco}<h3>{texts.brideParentsTitle || 'Nhà Gái'}</h3>{invitation.brideParents?.map((name, index) => <p key={index}>{name}</p>)}<small>{invitation.brideAddress?.replace(/ ([^ ]+)$/, '\u00A0$1')}</small></div>
           </div>
           
-          
-          {selectedEvent.subEvents ? (
+          {!isThankYou && (
             <>
-              <div className={styles.subEventsGrid}>
-                {selectedEvent.subEvents.map(sub => {
-                  const subDate = weddingDate(sub.date);
-                  const subValidDate = Number.isFinite(subDate.getTime());
-                  const subDirections = sub.mapUrl && /^https?:\/\//.test(sub.mapUrl) && !sub.mapUrl.includes('/embed') ? sub.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sub.address || sub.venue || '')}`;
-                    
-                    let subCalendarUrl = '#';
-                    if (subValidDate) {
-                      const stamp = value => value.toISOString().replace(/[-:]|\.\d{3}/g, '');
-                      const end = new Date(subDate.getTime() + 4 * 3600000);
-                      subCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(sub.name)} - ${encodeURIComponent(invitation.groom)} & ${encodeURIComponent(invitation.bride)}&dates=${stamp(subDate)}/${stamp(end)}&details=${encodeURIComponent(texts.inviteGreeting || 'Trân trọng kính mời')}&location=${encodeURIComponent(sub.address || sub.venue || '')}`;
-                    }
-                    const subEmbed = mapEmbed(sub.mapUrl);
+              {selectedEvent.subEvents ? (
+                <>
+                  <div className={styles.subEventsGrid}>
+                    {selectedEvent.subEvents.map(sub => {
+                      const subDate = weddingDate(sub.date);
+                      const subValidDate = Number.isFinite(subDate.getTime());
+                      const subDirections = sub.mapUrl && /^https?:\/\//.test(sub.mapUrl) && !sub.mapUrl.includes('/embed') ? sub.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sub.address || sub.venue || '')}`;
+                        
+                        let subCalendarUrl = '#';
+                        if (subValidDate) {
+                          const stamp = value => value.toISOString().replace(/[-:]|\.\d{3}/g, '');
+                          const end = new Date(subDate.getTime() + 4 * 3600000);
+                          subCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(sub.name)} - ${encodeURIComponent(invitation.groom)} & ${encodeURIComponent(invitation.bride)}&dates=${stamp(subDate)}/${stamp(end)}&details=${encodeURIComponent(texts.inviteGreeting || 'Trân trọng kính mời')}&location=${encodeURIComponent(sub.address || sub.venue || '')}`;
+                        }
+                        const subEmbed = mapEmbed(sub.mapUrl);
 
-                  return (
-                    <div key={sub.id} className={styles.eventCard} style={{ marginTop: 0, height: '100%' }}>
-                      <p className={styles.eyebrow}>{sub.name}</p>
-                      {subValidDate && <><p className={styles.eventTime}>{formatTime(subDate)}</p><time dateTime={subDate.toISOString()} className={styles.eventDate}>{formatDate(subDate)}</time></>}
-                      {!subValidDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{sub.lunarDate && <p className={styles.muted}>Tức ngày {sub.lunarDate}</p>}
-                      <h3>{texts.locationPrefix || 'Tại'} {noOrphan(sub.venue)}</h3><p>{noOrphan(sub.address)}</p>
-                      <div className={styles.actions}>{subValidDate && <a className={styles.secondaryButton} href={subCalendarUrl} target="_blank" rel="noreferrer">Lưu lịch</a>}{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
-                      {subEmbed && <LazyMap className={styles.mapContainer} style={{ marginTop: '24px' }} title={`Bản đồ ${sub.name}`} src={subEmbed} />}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className={styles.actions} style={{ justifyContent: 'center', marginTop: '24px' }}><a className={styles.primaryButton} href="#rsvp">Xác nhận tham dự</a></div>
+                      return (
+                        <div key={sub.id} className={styles.eventCard} style={{ marginTop: 0, height: '100%' }}>
+                          <p className={styles.eyebrow}>{sub.name}</p>
+                          {subValidDate && <><p className={styles.eventTime}>{formatTime(subDate)}</p><time dateTime={subDate.toISOString()} className={styles.eventDate}>{formatDate(subDate)}</time></>}
+                          {!subValidDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{sub.lunarDate && <p className={styles.muted}>Tức ngày {sub.lunarDate}</p>}
+                          <h3>{texts.locationPrefix || 'Tại'} {noOrphan(sub.venue)}</h3><p>{noOrphan(sub.address)}</p>
+                          <div className={styles.actions}>{subValidDate && <a className={styles.secondaryButton} href={subCalendarUrl} target="_blank" rel="noreferrer">Lưu lịch</a>}{(sub.address || sub.mapUrl) && <a className={styles.secondaryButton} href={subDirections} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
+                          {subEmbed && <LazyMap className={styles.mapContainer} style={{ marginTop: '24px' }} title={`Bản đồ ${sub.name}`} src={subEmbed} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className={styles.actions} style={{ justifyContent: 'center', marginTop: '24px' }}><a className={styles.primaryButton} href="#rsvp">Xác nhận tham dự</a></div>
+                </>
+              ) : (
+                <div className={styles.eventCard}>
+                  <p className={styles.eyebrow}>HẸN GẶP BẠN VÀO</p>
+                  {validDate && <><p className={styles.eventTime}>{formatTime(date)}</p><time dateTime={date.toISOString()} className={styles.eventDate}>{formatDate(date)}</time></>}
+                  {!validDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{selectedEvent.lunarDate && <p className={styles.muted}>Tức ngày {selectedEvent.lunarDate}</p>}
+                  <h3>{texts.locationPrefix || 'Tại'} {noOrphan(selectedEvent.venue || selectedEvent.name)}</h3><p>{noOrphan(selectedEvent.address) || 'Địa chỉ sẽ được thông báo'}</p>
+                  <div className={styles.actions}><a className={styles.primaryButton} href="#rsvp">Xác nhận tham dự</a>{validDate && <a className={styles.secondaryButton} href={calendarUrl()} target="_blank" rel="noreferrer">Lưu lịch</a>}{(selectedEvent.address || selectedEvent.mapUrl) && <a className={styles.secondaryButton} href={directions} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
+                </div>
+              )}
+
+              {schedule.length > 0 && <div className={styles.itinerary}><h3 className={styles.subheading}>{texts.itineraryTitle || 'Lịch Trình'}</h3><ol className={styles.schedule}>{schedule.map((item, index) => <li key={item.id || index}><span className={styles.stepNumber}>{String(index + 1).padStart(2, '0')}</span><strong>{item.time}</strong><span>{item.event || item.label}</span></li>)}</ol></div>}
+              {embed && <LazyMap className={styles.mapContainer} title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} />}
             </>
-          ) : (
-            <div className={styles.eventCard}>
-              <p className={styles.eyebrow}>HẸN GẶP BẠN VÀO</p>
-              {validDate && <><p className={styles.eventTime}>{formatTime(date)}</p><time dateTime={date.toISOString()} className={styles.eventDate}>{formatDate(date)}</time></>}
-              {!validDate && <p className={styles.muted}>Thời gian sẽ được thông báo</p>}{selectedEvent.lunarDate && <p className={styles.muted}>Tức ngày {selectedEvent.lunarDate}</p>}
-              <h3>{texts.locationPrefix || 'Tại'} {noOrphan(selectedEvent.venue || selectedEvent.name)}</h3><p>{noOrphan(selectedEvent.address) || 'Địa chỉ sẽ được thông báo'}</p>
-              <div className={styles.actions}><a className={styles.primaryButton} href="#rsvp">Xác nhận tham dự</a>{validDate && <a className={styles.secondaryButton} href={calendarUrl()} target="_blank" rel="noreferrer">Lưu lịch</a>}{(selectedEvent.address || selectedEvent.mapUrl) && <a className={styles.secondaryButton} href={directions} target="_blank" rel="noreferrer"><InteractiveIcon defaultIcon={MapPin} hoverIcon={Navigation} size={16} style={{ marginRight: 6 }} /> Chỉ đường</a>}</div>
-            </div>
           )}
-
-          {schedule.length > 0 && <div className={styles.itinerary}><h3 className={styles.subheading}>{texts.itineraryTitle || 'Lịch Trình'}</h3><ol className={styles.schedule}>{schedule.map((item, index) => <li key={item.id || index}><span className={styles.stepNumber}>{String(index + 1).padStart(2, '0')}</span><strong>{item.time}</strong><span>{item.event || item.label}</span></li>)}</ol></div>}
-          {embed && <LazyMap className={styles.mapContainer} title="Bản đồ địa điểm tổ chức lễ cưới" src={embed} />}
         </FadeInSection>
 
-        {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <Image src={story.imageUrl} alt={story.title} width={600} height={450} loading="lazy" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
-
-        {albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
+        {isThankYou && albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc Ngày Chung Đôi'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
           <div className={styles.galleryContainer}>
             <button className={`${styles.scrollBtn} ${styles.scrollBtnLeft}`} onClick={() => scrollGallery('left')} aria-label="Cuộn trái">
               <InteractiveIcon defaultIcon={ArrowLeft} size={24} />
@@ -718,8 +736,28 @@ export default function InvitationUI({ data, guestName, guestSlug, initialEventI
           </div>
         </FadeInSection>}
 
-        <FadeInSection id="rsvp" className={styles.rsvpSection}><div className={styles.rsvpHeading}><p className={styles.eyebrow}>MỘT LỜI HẸN, MỘT NIỀM VUI</p><h2 className={styles.sectionTitle}>{texts.rsvpTitle || 'Xác Nhận Tham Dự'}</h2><p>Sự hiện diện của bạn là món quà ý nghĩa nhất với chúng mình. Hãy để lại lời nhắn để chúng mình đón tiếp bạn chu đáo nhé.</p><span className={styles.rsvpFlower} aria-hidden="true">✿</span></div>
-          <div className={styles.rsvpForm}>{status === 'success' ? <div ref={success} tabIndex={-1} role="status" className={styles.success}><MorphIcon icon={Heart} size={24} style={{ display: 'block', margin: '0 auto 12px', color: '#79603d' }} /><h3>Cảm ơn {form.name}!</h3><p>{form.attending === 'yes' ? <>Chúng mình đã nhận được xác nhận tham dự.<br />Hẹn gặp bạn trong ngày vui!</> : <>Chúng mình đã nhận được phản hồi.<br />Cảm ơn bạn đã dành tình cảm cho chúng mình!</>}</p><p className={styles.muted}>{replyEvents || 'Chưa chọn tiệc'}{form.attending === 'yes' ? ` · ${form.count} người` : ' · Không tham dự'}</p><div className={styles.actions}>{invitation.qrCodeUrl && <a className={form.attending === 'no' ? styles.primaryButton : styles.secondaryButton} href="#gift">Gửi quà mừng</a>}<button className={form.attending === 'yes' ? styles.primaryButton : styles.secondaryButton} onClick={() => setStatus('idle')}>Sửa xác nhận</button><a className={styles.secondaryButton} href="#guestbook">Xem sổ lưu bút</a></div></div> : <form onSubmit={submit} aria-busy={!replyReady || status === 'submitting'}>{hasReply && <p className={styles.muted}>Bạn đang sửa phản hồi đã gửi. Bấm lưu để cập nhật.</p>}{!replyReady && !replyError ? <div className={styles.formFields} aria-hidden="true"><div className={styles.formGroup}><div className={`${styles.skeleton} ${styles.skeletonText}`} style={{width: '30%', marginBottom: 12}}></div><div className={styles.skeleton} style={{height: 48, borderRadius: 8}}></div></div><div className={styles.formGroup}><div className={`${styles.skeleton} ${styles.skeletonText}`} style={{width: '40%', marginBottom: 12}}></div><div className={styles.skeleton} style={{height: 48, borderRadius: 8}}></div></div><div className={styles.formGroup}><div className={`${styles.skeleton} ${styles.skeletonText}`} style={{width: '50%', marginBottom: 12}}></div><div className={styles.skeleton} style={{height: 100, borderRadius: 8}}></div></div><div className={styles.skeleton} style={{height: 48, borderRadius: 24, marginTop: 16}}></div></div> : (!replyReady && replyError && <div style={{textAlign: 'center', marginBottom: 16}}><p role="status" style={{color: 'red'}}>{replyError}</p><button type="button" className={styles.secondaryButton} onClick={() => setRetryLoad(value => value + 1)}>Thử tải lại</button></div>)}{ (replyReady || replyError) && <fieldset disabled={!replyReady || status === 'submitting'} className={styles.formFields}><div className={styles.formGroup}><label htmlFor="guest-name">Tên của bạn <span aria-hidden="true">*</span></label><input id="guest-name" name="name" autoComplete="name" required maxLength={120} pattern=".*\S.*" title="Vui lòng nhập tên của bạn" value={form.name} onChange={update} placeholder="Nhập tên của bạn" /></div><div className={styles.formGroup}><label htmlFor="attendance">Bạn sẽ tham dự chứ?</label><select id="attendance" name="attending" value={form.attending} onChange={update}><option value="yes">Mình sẽ đến chung vui</option><option value="no">Tiếc quá, mình không thể tham dự</option></select></div>{form.attending === 'yes' && <div className={styles.formGroup}><label>Bạn sẽ tới chung vui tại</label><div className={styles.checkboxGroup}>{events.map(event => <label key={event.id} className={styles.checkboxLabel}><input type="checkbox" checked={form.eventIds.includes(event.id)} onChange={e => { const checked = e.target.checked; rsvpSelectionEdited.current = true; setForm(prev => { const current = new Set(prev.eventIds.filter(Boolean)); if (checked) current.add(event.id); else current.delete(event.id); return { ...prev, eventIds: Array.from(current) }; }); }} />{event.name}</label>)}</div></div>}{form.attending === 'yes' && <div className={styles.formGroup}><label htmlFor="guest-count">Tổng số người tham dự</label><input id="guest-count" name="count" type="number" inputMode="numeric" min="1" max="10" required value={form.count} onChange={update} aria-describedby="count-hint" /><small id="count-hint">Tính cả bạn và người đi cùng (1–10 người).</small></div>}<div className={styles.formGroup}><label htmlFor="wish">Lời chúc gửi chúng mình <span className={styles.optional}>(không bắt buộc)</span></label><textarea id="wish" name="message" maxLength={2000} rows={4} value={form.message} onChange={update} placeholder="Gửi gắm một chút yêu thương…" aria-describedby="wish-hint" /><small id="wish-hint">Lời chúc và tên của bạn sẽ xuất hiện trong sổ lưu bút.</small></div><button className={styles.primaryButton} disabled={status === 'submitting'} type="submit">{status === 'submitting' ? <><span className={styles.spinner} role="status" aria-label="Đang gửi"></span> Đang gửi...</> : (hasReply ? <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Lưu thay đổi <InteractiveIcon defaultIcon={Send} isActive={status === 'submitting'} activeIcon={Loader2} size={16} /></span> : <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Gửi phản hồi <InteractiveIcon defaultIcon={Send} isActive={status === 'submitting'} activeIcon={Loader2} size={16} /></span>)}</button></fieldset>}{status === 'error' && <p className={styles.error} role="alert">{replyError || 'Chưa gửi được phản hồi. Thông tin của bạn vẫn được giữ lại, vui lòng thử lại.'}</p>}</form>}</div>
+        {stories.length > 0 && <FadeInSection id="story" className={styles.storySection}><p className={styles.eyebrow}>TỪ MỘT LẦN GẶP GỠ</p><h2 className={styles.sectionTitle}>{texts.storyTitle || 'Chuyện Tình Yêu'}</h2><div className={styles.stories}>{stories.map((story, index) => <article key={story.id || index} className={styles.storyCard}>{story.imageUrl && <Image src={story.imageUrl} alt={story.title} width={600} height={450} loading="lazy" />}<div><p className={styles.eyebrow}>{story.date}</p><h3>{story.title}</h3><p>{story.content}</p></div></article>)}</div></FadeInSection>}
+
+        {!isThankYou && albums.length > 0 && <FadeInSection id="gallery"><p className={styles.eyebrow}>NHỮNG ĐIỀU MUỐN GIỮ MÃI</p><h2 className={styles.sectionTitle}>{texts.galleryTitle || 'Khoảnh Khắc'}</h2><p className={styles.intro}>Chạm vào ảnh để ngắm trọn vẹn.</p>
+          <div className={styles.galleryContainer}>
+            <button className={`${styles.scrollBtn} ${styles.scrollBtnLeft}`} onClick={() => scrollGallery('left')} aria-label="Cuộn trái">
+              <InteractiveIcon defaultIcon={ArrowLeft} size={24} />
+            </button>
+              <div className={styles.horizontalScroll} ref={scrollRef}>
+                {albums.map((url, index) => (
+                  <button key={`${url}-${index}`} className={styles.scrollItem} aria-label={`Phóng to ảnh cưới ${index + 1}`} onClick={() => setZoomIndex(index)}>
+                    <Image src={url} alt={`Ảnh cưới ${index + 1}`} width={600} height={800} sizes="(max-width: 600px) 75vw, 320px" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            <button className={`${styles.scrollBtn} ${styles.scrollBtnRight}`} onClick={() => scrollGallery('right')} aria-label="Cuộn phải">
+              <InteractiveIcon defaultIcon={ArrowRight} size={24} />
+            </button>
+          </div>
+        </FadeInSection>}
+
+        <FadeInSection id="rsvp" className={styles.rsvpSection}><div className={styles.rsvpHeading}><p className={styles.eyebrow}>{isThankYou ? 'LƯU GIỮ YÊU THƯƠNG' : 'MỘT LỜI HẸN, MỘT NIỀM VUI'}</p><h2 className={styles.sectionTitle}>{isThankYou ? 'Gửi Lời Chúc Lưu Niệm' : (texts.rsvpTitle || 'Xác Nhận Tham Dự')}</h2><p>{isThankYou ? 'Đám cưới đã khép lại nhưng những lời chúc tốt đẹp của bạn sẽ luôn là kỷ niệm vô giá với vợ chồng chúng mình.' : 'Sự hiện diện của bạn là món quà ý nghĩa nhất với chúng mình. Hãy để lại lời nhắn để chúng mình đón tiếp bạn chu đáo nhé.'}</p><span className={styles.rsvpFlower} aria-hidden="true">✿</span></div>
+          <div className={styles.rsvpForm}>{status === 'success' ? <div ref={success} tabIndex={-1} role="status" className={styles.success}><MorphIcon icon={Heart} size={24} style={{ display: 'block', margin: '0 auto 12px', color: '#79603d' }} /><h3>Cảm ơn {form.name}!</h3><p>{isThankYou ? <>Chúng mình đã nhận được lời chúc kỷ niệm của bạn.<br />Chúc bạn và gia đình luôn ngập tràn niềm vui!</> : (form.attending === 'yes' ? <>Chúng mình đã nhận được xác nhận tham dự.<br />Hẹn gặp bạn trong ngày vui!</> : <>Chúng mình đã nhận được phản hồi.<br />Cảm ơn bạn đã dành tình cảm cho chúng mình!</>)}</p>{!isThankYou && <p className={styles.muted}>{replyEvents || 'Chưa chọn tiệc'}{form.attending === 'yes' ? ` · ${form.count} người` : ' · Không tham dự'}</p>}<div className={styles.actions}>{invitation.qrCodeUrl && <a className={form.attending === 'no' ? styles.primaryButton : styles.secondaryButton} href="#gift">Gửi quà mừng</a>}<button className={form.attending === 'yes' ? styles.primaryButton : styles.secondaryButton} onClick={() => setStatus('idle')}>{isThankYou ? 'Sửa lời chúc' : 'Sửa xác nhận'}</button><a className={styles.secondaryButton} href="#guestbook">Xem sổ lưu bút</a></div></div> : <form onSubmit={submit} aria-busy={!replyReady || status === 'submitting'}>{hasReply && <p className={styles.muted}>Bạn đang sửa phản hồi đã gửi. Bấm lưu để cập nhật.</p>}{!replyReady && !replyError ? <div className={styles.formFields} aria-hidden="true"><div className={styles.formGroup}><div className={`${styles.skeleton} ${styles.skeletonText}`} style={{width: '30%', marginBottom: 12}}></div><div className={styles.skeleton} style={{height: 48, borderRadius: 8}}></div></div><div className={styles.formGroup}><div className={`${styles.skeleton} ${styles.skeletonText}`} style={{width: '40%', marginBottom: 12}}></div><div className={styles.skeleton} style={{height: 48, borderRadius: 8}}></div></div><div className={styles.formGroup}><div className={`${styles.skeleton} ${styles.skeletonText}`} style={{width: '50%', marginBottom: 12}}></div><div className={styles.skeleton} style={{height: 100, borderRadius: 8}}></div></div><div className={styles.skeleton} style={{height: 48, borderRadius: 24, marginTop: 16}}></div></div> : (!replyReady && replyError && <div style={{textAlign: 'center', marginBottom: 16}}><p role="status" style={{color: 'red'}}>{replyError}</p><button type="button" className={styles.secondaryButton} onClick={() => setRetryLoad(value => value + 1)}>Thử tải lại</button></div>)}{ (replyReady || replyError) && <fieldset disabled={!replyReady || status === 'submitting'} className={styles.formFields}><div className={styles.formGroup}><label htmlFor="guest-name">Tên của bạn <span aria-hidden="true">*</span></label><input id="guest-name" name="name" autoComplete="name" required maxLength={120} pattern=".*\S.*" title="Vui lòng nhập tên của bạn" value={form.name} onChange={update} placeholder="Nhập tên của bạn" /></div>{!isThankYou && <div className={styles.formGroup}><label htmlFor="attendance">Bạn sẽ tham dự chứ?</label><select id="attendance" name="attending" value={form.attending} onChange={update}><option value="yes">Mình sẽ đến chung vui</option><option value="no">Tiếc quá, mình không thể tham dự</option></select></div>}{!isThankYou && form.attending === 'yes' && <div className={styles.formGroup}><label>Bạn sẽ tới chung vui tại</label><div className={styles.checkboxGroup}>{events.map(event => <label key={event.id} className={styles.checkboxLabel}><input type="checkbox" checked={form.eventIds.includes(event.id)} onChange={e => { const checked = e.target.checked; rsvpSelectionEdited.current = true; setForm(prev => { const current = new Set(prev.eventIds.filter(Boolean)); if (checked) current.add(event.id); else current.delete(event.id); return { ...prev, eventIds: Array.from(current) }; }); }} />{event.name}</label>)}</div></div>}{!isThankYou && form.attending === 'yes' && <div className={styles.formGroup}><label htmlFor="guest-count">Tổng số người tham dự</label><input id="guest-count" name="count" type="number" inputMode="numeric" min="1" max="10" required value={form.count} onChange={update} aria-describedby="count-hint" /><small id="count-hint">Tính cả bạn và người đi cùng (1–10 người).</small></div>}<div className={styles.formGroup}><label htmlFor="wish">Lời chúc gửi chúng mình {!isThankYou && <span className={styles.optional}>(không bắt buộc)</span>}</label><textarea id="wish" name="message" maxLength={2000} rows={4} required={isThankYou} value={form.message} onChange={update} placeholder="Gửi gắm một chút yêu thương…" aria-describedby="wish-hint" /><small id="wish-hint">Lời chúc và tên của bạn sẽ xuất hiện trong sổ lưu bút.</small></div><button className={styles.primaryButton} disabled={status === 'submitting'} type="submit">{status === 'submitting' ? <><span className={styles.spinner} role="status" aria-label="Đang gửi"></span> Đang gửi...</> : (hasReply ? <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>Lưu thay đổi <InteractiveIcon defaultIcon={Send} isActive={status === 'submitting'} activeIcon={Loader2} size={16} /></span> : <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>{isThankYou ? 'Gửi lời chúc' : 'Gửi phản hồi'} <InteractiveIcon defaultIcon={Send} isActive={status === 'submitting'} activeIcon={Loader2} size={16} /></span>)}</button></fieldset>}{status === 'error' && <p className={styles.error} role="alert">{replyError || 'Chưa gửi được phản hồi. Thông tin của bạn vẫn được giữ lại, vui lòng thử lại.'}</p>}</form>}</div>
         </FadeInSection>
 
         {invitation.qrCodeUrl && <FadeInSection id="gift" className={styles.giftSection}>

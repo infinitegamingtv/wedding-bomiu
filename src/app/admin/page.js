@@ -509,6 +509,16 @@ export default function AdminPage() {
     });
   };
 
+  const isThankYouMode = data?.texts?.thankYouMode === '1';
+
+  const toggleThankYouMode = () => {
+    const nextVal = isThankYouMode ? '0' : '1';
+    queueAutoSave(prev => ({
+      ...prev,
+      texts: { ...prev.texts, thankYouMode: nextVal }
+    }), 100);
+  };
+
   if (loading) {
     return (
       <div className={styles.adminLayout}>
@@ -925,6 +935,14 @@ export default function AdminPage() {
                   title="Tải bản sao lưu dự phòng toàn bộ dữ liệu (.json)"
                 >
                   Sao lưu (.JSON)
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.privacyBtn} ${isThankYouMode ? styles.privacyBtnActive : ''}`}
+                  onClick={toggleThankYouMode}
+                  title="Chuyển toàn bộ thiệp cưới sang Chế độ Cảm Ơn sau đám cưới (Tự động lưu)"
+                >
+                  {isThankYouMode ? '✓ Đang bật Chế độ Cảm Ơn' : 'Bật Chế độ Cảm Ơn'}
                 </button>
                 <button
                   type="button"
@@ -2297,6 +2315,56 @@ export default function AdminPage() {
           <div>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>Nội dung Thiệp</h1>
+            </div>
+
+            <div className={styles.card} style={{ background: isThankYouMode ? '#fdfaf5' : '#fff', borderColor: isThankYouMode ? '#C5A880' : '#eaeaea' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <h2 className={styles.cardTitle} style={{ marginBottom: 4 }}>
+                    Chế độ &quot;Cảm Ơn Sau Đám Cưới&quot; (Thank-You Mode)
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '0.86rem', color: '#666' }}>
+                    Khi bật: Thiệp sẽ chuyển từ lời mời sang <strong>Thư cảm ơn chân thành</strong>, đưa <strong>Album ảnh cưới lên đầu trang</strong> và đổi form RSVP thành <strong>Gửi lời chúc lưu niệm</strong>.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={isThankYouMode ? styles.buttonPrimary : styles.buttonSecondary}
+                  onClick={toggleThankYouMode}
+                >
+                  {isThankYouMode ? '✓ Đang BẬT Chế độ Cảm Ơn (Bấm để tắt)' : 'Bật Chế độ Cảm Ơn (1 chạm)'}
+                </button>
+              </div>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Tiêu đề lời cảm ơn</label>
+                  <input
+                    className={styles.input}
+                    placeholder="VD: Chân Thành Cảm Ơn"
+                    value={data.texts?.thankYouTitle || ''}
+                    onChange={e => handleTextChange(e, 'thankYouTitle')}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Link trọn bộ ảnh/video ngày cưới (Google Drive / Photos nếu có)</label>
+                  <input
+                    className={styles.input}
+                    placeholder="VD: https://drive.google.com/..."
+                    value={data.texts?.thankYouAlbumUrl || ''}
+                    onChange={e => handleTextChange(e, 'thankYouAlbumUrl')}
+                  />
+                </div>
+                <div className={`${styles.formGroup} ${styles.full}`}>
+                  <label className={styles.label}>Nội dung thư cảm ơn gửi khách mời</label>
+                  <textarea
+                    className={styles.textarea}
+                    style={{ minHeight: 80 }}
+                    placeholder="Cảm ơn bạn đã dành thời gian quý báu đến chung vui và gửi những lời chúc tốt đẹp nhất tới gia đình chúng mình. Sự hiện diện và tình cảm của bạn là niềm hạnh phúc lớn lao trong ngày trọng đại của hai vợ chồng!"
+                    value={data.texts?.thankYouMessage || ''}
+                    onChange={e => handleTextChange(e, 'thankYouMessage')}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className={styles.card}>
