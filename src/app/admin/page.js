@@ -30,6 +30,7 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [contentSection, setContentSection] = useState('general');
   const [newImageUrl, setNewImageUrl] = useState('');
 
   // CRM & Filter States
@@ -921,24 +922,7 @@ export default function AdminPage() {
           <div>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>Tổng quan</h1>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className={styles.privacyBtn}
-                  onClick={handleRefreshData}
-                  disabled={refreshing}
-                  title="Tải lại phản hồi (RSVP) & lời chúc mới nhất từ khách mà không cần F5"
-                >
-                  {refreshing ? 'Đang tải...' : 'Làm mới RSVP'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.privacyBtn}
-                  onClick={handleBackupJson}
-                  title="Tải bản sao lưu dự phòng toàn bộ dữ liệu (.json)"
-                >
-                  Sao lưu (.JSON)
-                </button>
+              <div className={styles.headerActions}>
                 <button
                   type="button"
                   className={`${styles.privacyBtn} ${isThankYouMode ? styles.privacyBtnActive : ''}`}
@@ -1841,23 +1825,22 @@ export default function AdminPage() {
 
             {/* Bảng nhập và tra cứu Sổ Tiền Mừng tinh gọn */}
             <div className={styles.card}>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+              <div className={styles.filterBarGifts}>
                 <input
                   className={styles.input}
-                  style={{ flex: '1 1 220px', padding: '9px 14px' }}
                   placeholder="Tìm tên khách, nhóm hoặc ghi chú quà..."
                   value={giftSearch}
                   onChange={e => { setGiftSearch(e.target.value); setGiftLimit(50); }}
                 />
-                <select className={styles.select} style={{ width: '160px', padding: '9px 12px' }} value={giftFilterGroup} onChange={e => { setGiftFilterGroup(e.target.value); setGiftLimit(50); }}>
+                <select className={styles.select} value={giftFilterGroup} onChange={e => { setGiftFilterGroup(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Tất cả nhóm</option>
                   {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select className={styles.select} style={{ width: '160px', padding: '9px 12px' }} value={giftFilterEvent} onChange={e => { setGiftFilterEvent(e.target.value); setGiftLimit(50); }}>
+                <select className={styles.select} value={giftFilterEvent} onChange={e => { setGiftFilterEvent(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Tất cả tiệc</option>
                   {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
-                <select className={styles.select} style={{ width: '180px', padding: '9px 12px' }} value={giftFilterMethod} onChange={e => { setGiftFilterMethod(e.target.value); setGiftLimit(50); }}>
+                <select className={styles.select} value={giftFilterMethod} onChange={e => { setGiftFilterMethod(e.target.value); setGiftLimit(50); }}>
                   <option value="all">Mọi trạng thái mừng</option>
                   <option value="gifted">✓ Đã mừng ({giftedRows.length})</option>
                   <option value="ungifted">Chưa ghi nhận ({allRows.length - giftedRows.length})</option>
@@ -1868,7 +1851,7 @@ export default function AdminPage() {
               </div>
 
               <div className={styles.tableWrapper}>
-                <table className={styles.table}>
+                <table className={`${styles.table} ${styles.responsiveTable}`}>
                   <thead>
                     <tr>
                       <th>Khách mời & Nhóm</th>
@@ -1894,7 +1877,7 @@ export default function AdminPage() {
                           style={{ background: row.hasGift ? '#fafdf9' : undefined }}
                           onClick={() => setActiveGiftRowKey(rowKey)}
                         >
-                          <td style={{ minWidth: 180, padding: '12px 16px' }}>
+                          <td data-label="Khách mời">
                             <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
                               <strong>{row.name}</strong>
                               {row.group && <span className={styles.groupBadge}>{row.group}</span>}
@@ -1911,70 +1894,72 @@ export default function AdminPage() {
                             </div>
                           </td>
 
-                          <td style={{ minWidth: 240, padding: '12px 16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {hideMoney ? (
-                                <span style={{ fontWeight: 700, color: amt > 0 ? '#2e7d32' : '#999', fontSize: '0.92rem' }}>
-                                  {amt > 0 ? '•••,••• đ' : 'Chưa nhập'}
-                                </span>
-                              ) : (
-                                <input
-                                  type="number"
-                                  step="50000"
-                                  min="0"
-                                  className={styles.moneyInput}
-                                  placeholder="Bấm nhập số tiền..."
-                                  value={amt > 0 ? amt : ''}
-                                  onFocus={() => setActiveGiftRowKey(rowKey)}
-                                  onChange={e => {
-                                    const val = Math.max(0, Number(e.target.value) || 0);
-                                    updateGuestGift(row, { giftAmount: val }, 800);
-                                  }}
-                                />
-                              )}
-                              {!hideMoney && amt > 0 && (
-                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2e7d32', whiteSpace: 'nowrap' }}>
-                                  {amt.toLocaleString('vi-VN')} đ
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Chỉ hiển thị dải nút mệnh giá nhanh ở dòng đang chọn */}
-                            {isRowActive && !hideMoney && (
-                              <div className={styles.presetGroup} style={{ marginTop: 6 }}>
-                                {QUICK_AMOUNTS.map(preset => (
-                                  <button
-                                    key={preset.value}
-                                    type="button"
-                                    className={`${styles.presetChip} ${amt === preset.value ? styles.presetChipActive : ''}`}
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      updateGuestGift(row, { giftAmount: preset.value });
-                                      setActiveGiftRowKey(null);
+                          <td data-label="Số tiền mừng">
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                {hideMoney ? (
+                                  <span style={{ fontWeight: 700, color: amt > 0 ? '#2e7d32' : '#999', fontSize: '0.92rem' }}>
+                                    {amt > 0 ? '•••,••• đ' : 'Chưa nhập'}
+                                  </span>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    step="50000"
+                                    min="0"
+                                    className={styles.moneyInput}
+                                    placeholder="Bấm nhập số tiền..."
+                                    value={amt > 0 ? amt : ''}
+                                    onFocus={() => setActiveGiftRowKey(rowKey)}
+                                    onChange={e => {
+                                      const val = Math.max(0, Number(e.target.value) || 0);
+                                      updateGuestGift(row, { giftAmount: val }, 800);
                                     }}
-                                  >
-                                    {preset.label}
-                                  </button>
-                                ))}
-                                {amt > 0 && (
-                                  <button
-                                    type="button"
-                                    className={styles.presetChipClear}
-                                    title="Xóa số tiền về 0"
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      updateGuestGift(row, { giftAmount: 0 });
-                                      setActiveGiftRowKey(null);
-                                    }}
-                                  >
-                                    ✕ 0đ
-                                  </button>
+                                  />
+                                )}
+                                {!hideMoney && amt > 0 && (
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2e7d32', whiteSpace: 'nowrap' }}>
+                                    {amt.toLocaleString('vi-VN')} đ
+                                  </span>
                                 )}
                               </div>
-                            )}
+
+                              {/* Chỉ hiển thị dải nút mệnh giá nhanh ở dòng đang chọn */}
+                              {isRowActive && !hideMoney && (
+                                <div className={styles.presetGroup} style={{ marginTop: 6 }}>
+                                  {QUICK_AMOUNTS.map(preset => (
+                                    <button
+                                      key={preset.value}
+                                      type="button"
+                                      className={`${styles.presetChip} ${amt === preset.value ? styles.presetChipActive : ''}`}
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        updateGuestGift(row, { giftAmount: preset.value });
+                                        setActiveGiftRowKey(null);
+                                      }}
+                                    >
+                                      {preset.label}
+                                    </button>
+                                  ))}
+                                  {amt > 0 && (
+                                    <button
+                                      type="button"
+                                      className={styles.presetChipClear}
+                                      title="Xóa số tiền về 0"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        updateGuestGift(row, { giftAmount: 0 });
+                                        setActiveGiftRowKey(null);
+                                      }}
+                                    >
+                                      ✕ 0đ
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </td>
 
-                          <td style={{ minWidth: 140, padding: '12px 16px' }}>
+                          <td data-label="Hình thức">
                             <select
                               className={`${styles.methodSelect} ${row.hasGift ? methodClass : ''}`}
                               value={row.giftMethod || 'cash'}
@@ -1986,7 +1971,7 @@ export default function AdminPage() {
                             </select>
                           </td>
 
-                          <td style={{ minWidth: 200, padding: '12px 16px' }}>
+                          <td data-label="Ghi chú">
                             <input
                               type="text"
                               className={styles.giftNoteInput}
@@ -1997,8 +1982,8 @@ export default function AdminPage() {
                             />
                           </td>
 
-                          <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                            {row.guestId && (
+                          <td data-label="Xóa" style={{ textAlign: 'center' }}>
+                            {row.guestId ? (
                               <button
                                 type="button"
                                 title="Xóa khách này"
@@ -2007,7 +1992,7 @@ export default function AdminPage() {
                               >
                                 <Icon icon={Trash2} size={14} />
                               </button>
-                            )}
+                            ) : <span style={{ color: '#ccc' }}>—</span>}
                           </td>
                         </tr>
                       );
@@ -2118,23 +2103,23 @@ export default function AdminPage() {
             </div>
 
             <div className={styles.card}>
-              <div style={{display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap'}}>
-                <input className={styles.input} style={{flex: '1 1 200px'}} placeholder="Tìm tên khách hoặc nhóm..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCrmLimit(50); }} />
-                <select className={styles.select} style={{width: '165px'}} value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setCrmLimit(50); }}>
+              <div className={styles.filterBar}>
+                <input className={styles.input} placeholder="Tìm tên khách hoặc nhóm..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCrmLimit(50); }} />
+                <select className={styles.select} value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Tất cả nhóm</option>
                   {availableGroups.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select className={styles.select} style={{width: '175px'}} value={filterEvent} onChange={e => { setFilterEvent(e.target.value); setCrmLimit(50); }}>
+                <select className={styles.select} value={filterEvent} onChange={e => { setFilterEvent(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Tất cả tiệc</option>
                   {data.events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
-                <select className={styles.select} style={{width: '155px'}} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCrmLimit(50); }}>
+                <select className={styles.select} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Mọi phản hồi</option>
                   <option value="pending">Chờ phản hồi</option>
                   <option value="yes">Tham dự</option>
                   <option value="no">Không đi</option>
                 </select>
-                <select className={styles.select} style={{width: '155px'}} value={filterSent} onChange={e => { setFilterSent(e.target.value); setCrmLimit(50); }}>
+                <select className={styles.select} value={filterSent} onChange={e => { setFilterSent(e.target.value); setCrmLimit(50); }}>
                   <option value="all">Tất cả gửi thiệp</option>
                   <option value="unsent">Chưa gửi link ({unsentLinksCount})</option>
                   <option value="sent">Đã gửi link ({sentLinksCount})</option>
@@ -2142,7 +2127,7 @@ export default function AdminPage() {
               </div>
               
               <div className={styles.tableWrapper}>
-                <table className={styles.table}>
+                <table className={`${styles.table} ${styles.responsiveTable}`}>
                   <thead>
                     <tr>
                       <th>Khách mời & Nhóm</th>
@@ -2159,7 +2144,7 @@ export default function AdminPage() {
                       const guestUrl = getGuestUrl(row);
                       return (
                         <tr key={row.id || row.guestId || i}>
-                          <td style={{ minWidth: 210 }}>
+                          <td data-label="Khách mời">
                             {isEditing ? (
                               <div className={styles.inlineEditBox}>
                                 <input
@@ -2206,7 +2191,7 @@ export default function AdminPage() {
                             )}
                           </td>
 
-                          <td style={{textAlign: 'center'}}>
+                          <td data-label="Trạng thái gửi" style={{textAlign: 'center'}}>
                             {row.guestId ? (
                               <label className={`${styles.sentToggle} ${row.sent ? styles.sentTrue : styles.sentFalse}`} title="Bấm để tick đã gửi hoặc chưa gửi (Tự động lưu)">
                                 <input 
@@ -2221,43 +2206,37 @@ export default function AdminPage() {
                             )}
                           </td>
 
-                          <td>
+                          <td data-label="Gửi thiệp">
                             {row.guestId ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <div>
-                                  <button
-                                    type="button"
-                                    className={`${styles.buttonCopyInvite} ${copiedKey === `msg-${row.guestId}` ? styles.buttonCopySuccess : ''}`}
-                                    onClick={() => copyInviteMessage(row)}
-                                    title="Copy câu mời kèm link và tự động đánh dấu Đã gửi"
-                                  >
-                                    <Icon icon={copiedKey === `msg-${row.guestId}` ? Check : Copy} size={14} />
-                                    {copiedKey === `msg-${row.guestId}` ? 'Đã copy lời mời!' : 'Copy Lời mời + Link'}
-                                  </button>
-                                </div>
-                                <div className={styles.linkBox}>
-                                  <input className={styles.linkInput} readOnly value={guestUrl} />
-                                  <button
-                                    type="button"
-                                    className={styles.buttonSecondary}
-                                    style={{padding: '5px 9px', fontSize: '0.78rem', whiteSpace: 'nowrap'}}
-                                    onClick={() => copyRawLink(row)}
-                                    title="Chỉ copy đường dẫn URL"
-                                  >
-                                    {copiedKey === `link-${row.guestId}` ? '✓ Đã chép' : <Icon icon={LinkIcon} size={13} />}
-                                  </button>
-                                </div>
+                              <div className={styles.quickShareRow}>
+                                <button
+                                  type="button"
+                                  className={`${styles.buttonCopyInvite} ${copiedKey === `msg-${row.guestId}` ? styles.buttonCopySuccess : ''}`}
+                                  onClick={() => copyInviteMessage(row)}
+                                  title="Copy câu mời kèm link và tự động đánh dấu Đã gửi"
+                                >
+                                  <Icon icon={copiedKey === `msg-${row.guestId}` ? Check : Copy} size={14} />
+                                  {copiedKey === `msg-${row.guestId}` ? 'Đã copy!' : 'Copy Lời mời + Link'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`${styles.iconBtn} ${copiedKey === `link-${row.guestId}` ? styles.buttonCopySuccess : ''}`}
+                                  onClick={() => copyRawLink(row)}
+                                  title={`Chỉ copy đường dẫn URL: ${guestUrl}`}
+                                >
+                                  <Icon icon={copiedKey === `link-${row.guestId}` ? Check : LinkIcon} size={14} />
+                                </button>
                               </div>
-                            ) : <span style={{color: '#999', fontSize: '0.85rem'}}>N/A (Thiệp chung)</span>}
+                            ) : <span style={{color: '#999', fontSize: '0.82rem'}}>N/A (Thiệp chung)</span>}
                           </td>
 
-                          <td>
+                          <td data-label="Phản hồi">
                             <span className={`${styles.badge} ${row.attending === 'yes' ? styles.success : row.attending === 'no' ? styles.danger : styles.warning}`}>
                               {row.attending === 'yes' ? 'Tham dự' : row.attending === 'no' ? 'Không đi' : 'Chờ phản hồi'}
                             </span>
                           </td>
 
-                          <td>
+                          <td data-label="Chi tiết">
                             <div style={{fontSize: '0.85rem'}}>
                               {row.attending !== 'pending' && (
                                 <>
@@ -2271,10 +2250,11 @@ export default function AdminPage() {
                                   Mừng: {row.giftAmount > 0 ? formatVND(row.giftAmount) : ''} {row.giftNote ? `(${row.giftNote})` : ''}
                                 </div>
                               )}
+                              {row.attending === 'pending' && !row.hasGift && <span style={{ color: '#bbb' }}>—</span>}
                             </div>
                           </td>
 
-                          <td>
+                          <td data-label="Thao tác">
                             <div style={{display: 'flex', gap: '6px'}}>
                               {row.guestId && (
                                 <button
@@ -2320,152 +2300,185 @@ export default function AdminPage() {
               <h1 className={styles.pageTitle}>Nội dung Thiệp</h1>
             </div>
 
-            <div className={styles.card} style={{ background: isThankYouMode ? '#fdfaf5' : '#fff', borderColor: isThankYouMode ? '#C5A880' : '#eaeaea' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-                <div>
-                  <h2 className={styles.cardTitle} style={{ marginBottom: 4 }}>
-                    Chế độ &quot;Cảm Ơn Sau Đám Cưới&quot; (Thank-You Mode)
-                  </h2>
-                  <p style={{ margin: 0, fontSize: '0.86rem', color: '#666' }}>
-                    Khi bật: Thiệp sẽ chuyển từ lời mời sang <strong>Thư cảm ơn chân thành</strong>, đưa <strong>Album ảnh cưới lên đầu trang</strong> và đổi form RSVP thành <strong>Gửi lời chúc lưu niệm</strong>.
-                  </p>
-                </div>
+            <div className={styles.contentSubTabs}>
+              {[
+                { id: 'general', label: 'Cơ bản & Gia đình' },
+                { id: 'events', label: 'Sự kiện & Mừng cưới' },
+                { id: 'texts', label: 'Tùy chỉnh Câu chữ' },
+                { id: 'media', label: 'Chuyện tình & Nhạc nền' },
+                { id: 'all', label: 'Hiện tất cả' },
+              ].map(sec => (
                 <button
+                  key={sec.id}
                   type="button"
-                  className={isThankYouMode ? styles.buttonPrimary : styles.buttonSecondary}
-                  onClick={toggleThankYouMode}
+                  className={`${styles.contentSubTab} ${contentSection === sec.id ? styles.contentSubTabActive : ''}`}
+                  onClick={() => setContentSection(sec.id)}
                 >
-                  {isThankYouMode ? '✓ Đang BẬT Chế độ Cảm Ơn (Bấm để tắt)' : 'Bật Chế độ Cảm Ơn (1 chạm)'}
+                  {sec.label}
                 </button>
-              </div>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Tiêu đề lời cảm ơn</label>
-                  <input
-                    className={styles.input}
-                    placeholder="VD: Chân Thành Cảm Ơn"
-                    value={data.texts?.thankYouTitle || ''}
-                    onChange={e => handleTextChange(e, 'thankYouTitle')}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Link trọn bộ ảnh/video ngày cưới (Google Drive / Photos nếu có)</label>
-                  <input
-                    className={styles.input}
-                    placeholder="VD: https://drive.google.com/..."
-                    value={data.texts?.thankYouAlbumUrl || ''}
-                    onChange={e => handleTextChange(e, 'thankYouAlbumUrl')}
-                  />
-                </div>
-                <div className={`${styles.formGroup} ${styles.full}`}>
-                  <label className={styles.label}>Nội dung thư cảm ơn gửi khách mời</label>
-                  <textarea
-                    className={styles.textarea}
-                    style={{ minHeight: 80 }}
-                    placeholder="Cảm ơn bạn đã dành thời gian quý báu đến chung vui và gửi những lời chúc tốt đẹp nhất tới gia đình chúng mình. Sự hiện diện và tình cảm của bạn là niềm hạnh phúc lớn lao trong ngày trọng đại của hai vợ chồng!"
-                    value={data.texts?.thankYouMessage || ''}
-                    onChange={e => handleTextChange(e, 'thankYouMessage')}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Thông tin chung</h2>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}><label className={styles.label}>Tên Chú Rể</label><input className={styles.input} value={data.invitation.groom || ''} onChange={e => handleInputChange(e, 'groom')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tên Cô Dâu</label><input className={styles.input} value={data.invitation.bride || ''} onChange={e => handleInputChange(e, 'bride')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tên Chú Rể (Rút gọn)</label><input className={styles.input} value={data.invitation.groomShort || ''} onChange={e => handleInputChange(e, 'groomShort')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tên Cô Dâu (Rút gọn)</label><input className={styles.input} value={data.invitation.brideShort || ''} onChange={e => handleInputChange(e, 'brideShort')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Ngày cưới (Tùy chỉnh)</label><input className={styles.input} value={data.invitation.dateString || ''} onChange={e => handleInputChange(e, 'dateString')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Ngày Âm Lịch</label><input className={styles.input} value={data.invitation.lunarDate || ''} onChange={e => handleInputChange(e, 'lunarDate')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Mô tả Chú rể (Bio)</label><input className={styles.input} value={data.invitation.groomBio || ''} onChange={e => handleInputChange(e, 'groomBio')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Mô tả Cô dâu (Bio)</label><input className={styles.input} value={data.invitation.brideBio || ''} onChange={e => handleInputChange(e, 'brideBio')} /></div>
-              </div>
-            </div>
-
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Ảnh chính & Nhận diện</h2>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}><label className={styles.label}>Link ảnh Logo</label><input className={styles.input} value={data.invitation.logoUrl || ''} onChange={e => handleInputChange(e, 'logoUrl')} placeholder="VD: https://..." /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Link ảnh nền chính (Hero Background)</label><input className={styles.input} value={data.invitation.heroBgUrl || ''} onChange={e => handleInputChange(e, 'heroBgUrl')} placeholder="VD: https://..." /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Link ảnh kỉ niệm (Cạnh sổ lưu bút)</label><input className={styles.input} value={data.invitation.guestbookPhotoUrl || ''} onChange={e => handleInputChange(e, 'guestbookPhotoUrl')} placeholder="VD: https://..." /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Avatar Chú rể</label><input className={styles.input} value={data.invitation.groomAvatarUrl || ''} onChange={e => handleInputChange(e, 'groomAvatarUrl')} placeholder="VD: https://..." /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Avatar Cô dâu</label><input className={styles.input} value={data.invitation.brideAvatarUrl || ''} onChange={e => handleInputChange(e, 'brideAvatarUrl')} placeholder="VD: https://..." /></div>
-              </div>
-            </div>
-
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Tùy chỉnh Văn Bản (Tiêu đề các phần)</h2>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}><label className={styles.label}>Tiêu đề chính (VD: Lễ Thành Hôn)</label><input className={styles.input} value={data.texts?.heroSubtitle || ''} onChange={e => handleTextChange(e, 'heroSubtitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Lời mời (VD: Trân Trọng Kính Mời)</label><input className={styles.input} value={data.texts?.inviteTitle || ''} onChange={e => handleTextChange(e, 'inviteTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Câu chào (VD: Tới dự bữa tiệc...)</label><input className={styles.input} value={data.texts?.inviteGreeting || ''} onChange={e => handleTextChange(e, 'inviteGreeting')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Chữ &quot;Nhà Trai&quot;</label><input className={styles.input} value={data.texts?.groomParentsTitle || ''} onChange={e => handleTextChange(e, 'groomParentsTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Chữ &quot;Nhà Gái&quot;</label><input className={styles.input} value={data.texts?.brideParentsTitle || ''} onChange={e => handleTextChange(e, 'brideParentsTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tiền tố địa điểm (VD: TẠI)</label><input className={styles.input} value={data.texts?.locationPrefix || ''} onChange={e => handleTextChange(e, 'locationPrefix')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Lịch Trình</label><input className={styles.input} value={data.texts?.itineraryTitle || ''} onChange={e => handleTextChange(e, 'itineraryTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Chuyện Tình Yêu</label><input className={styles.input} value={data.texts?.storyTitle || ''} onChange={e => handleTextChange(e, 'storyTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Ảnh Album</label><input className={styles.input} value={data.texts?.galleryTitle || ''} onChange={e => handleTextChange(e, 'galleryTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Sổ Lưu Bút</label><input className={styles.input} value={data.texts?.guestbookTitle || ''} onChange={e => handleTextChange(e, 'guestbookTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tiêu đề RSVP</label><input className={styles.input} value={data.texts?.rsvpTitle || ''} onChange={e => handleTextChange(e, 'rsvpTitle')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Gửi Quà</label><input className={styles.input} value={data.texts?.giftTitle || ''} onChange={e => handleTextChange(e, 'giftTitle')} /></div>
-              </div>
-            </div>
-
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Thông tin Gia đình</h2>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}><label className={styles.label}>Bố mẹ Chú rể (cách nhau bởi dấu phẩy)</label><input className={styles.input} value={(data.invitation.groomParents || []).join(', ')} onChange={e => setData(prev => ({...prev, invitation: {...prev.invitation, groomParents: e.target.value.split(',').map(s=>s.trim()).filter(Boolean)}}))} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Địa chỉ Nhà Trai</label><input className={styles.input} value={data.invitation.groomAddress || ''} onChange={e => handleInputChange(e, 'groomAddress')} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Bố mẹ Cô dâu (cách nhau bởi dấu phẩy)</label><input className={styles.input} value={(data.invitation.brideParents || []).join(', ')} onChange={e => setData(prev => ({...prev, invitation: {...prev.invitation, brideParents: e.target.value.split(',').map(s=>s.trim()).filter(Boolean)}}))} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Địa chỉ Nhà Gái</label><input className={styles.input} value={data.invitation.brideAddress || ''} onChange={e => handleInputChange(e, 'brideAddress')} /></div>
-              </div>
-            </div>
-
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Thông tin Ngân hàng (Mừng cưới)</h2>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}><label className={styles.label}>Tên Ngân Hàng</label><input className={styles.input} value={data.invitation.bankName || ''} onChange={e => handleInputChange(e, 'bankName')} placeholder="VD: Vietcombank" /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Tên Chủ Tài Khoản</label><input className={styles.input} value={data.invitation.accountName || ''} onChange={e => handleInputChange(e, 'accountName')} placeholder="VD: NGUYEN VAN A" /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Số Tài Khoản</label><input className={styles.input} value={data.invitation.accountNumber || ''} onChange={e => handleInputChange(e, 'accountNumber')} placeholder="VD: 123456789" /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Link ảnh QR Mừng cưới</label><input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="VD: https://..." /></div>
-              </div>
-            </div>
-
-            <div className={styles.card}>
-              <EventEditor events={data.events} onChange={events => setData(prev => ({ ...prev, events }))} />
-            </div>
-            
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Chuyện Tình Yêu (Stories)</h2>
-              <button className={styles.buttonSecondary} style={{marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px'}} onClick={() => setData(prev => ({ ...prev, stories: [...(prev.stories||[]), {id: crypto.randomUUID(), date: '', title: '', content: ''}] }))}><Icon icon={Plus} size={16} /> Thêm Câu Chuyện</button>
-              {(data.stories || []).map((story, i) => (
-                <div key={story.id} style={{ padding: '16px', border: '1px solid #eaeaea', borderRadius: '8px', marginBottom: '16px', background: '#fafafa' }}>
-                  <div className={styles.formGrid}>
-                    <div className={styles.formGroup}><label className={styles.label}>Thời gian</label><input className={styles.input} value={story.date} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, date: e.target.value} : s)}))} /></div>
-                    <div className={styles.formGroup}><label className={styles.label}>Tiêu đề</label><input className={styles.input} value={story.title} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, title: e.target.value} : s)}))} /></div>
-                    <div className={styles.formGroup}><label className={styles.label}>Link ảnh</label><input className={styles.input} value={story.imageUrl || ''} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, imageUrl: e.target.value} : s)}))} /></div>
-                    <div className={`${styles.formGroup} ${styles.full}`}><label className={styles.label}>Nội dung</label><textarea className={styles.textarea} value={story.content} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, content: e.target.value} : s)}))} /></div>
-                  </div>
-                  <button className={`${styles.buttonSecondary} ${styles.buttonDanger}`} onClick={() => setData(prev => ({...prev, stories: prev.stories.filter((_, idx) => idx !== i)}))}>Xóa chuyện này</button>
-                </div>
               ))}
             </div>
 
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>Danh Sách Nhạc (Playlist)</h2>
-              <button className={styles.buttonSecondary} style={{marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px'}} onClick={() => setData(prev => ({ ...prev, invitation: { ...prev.invitation, musicTracks: [...(prev.invitation.musicTracks || []), { name: '', url: '' }] } }))}><Icon icon={Plus} size={16} /> Thêm Bài Hát</button>
-              {(data.invitation.musicTracks || []).map((track, i) => (
-                <div key={i} style={{ padding: '16px', border: '1px solid #eaeaea', borderRadius: '8px', marginBottom: '16px', background: '#fafafa' }}>
-                  <div className={styles.formGrid}>
-                    <div className={styles.formGroup}><label className={styles.label}>Tên Bài Hát</label><input className={styles.input} value={track.name || ''} onChange={e => setData(prev => { const newTracks = [...(prev.invitation.musicTracks || [])]; newTracks[i] = { ...newTracks[i], name: e.target.value }; return { ...prev, invitation: { ...prev.invitation, musicTracks: newTracks } }; })} placeholder="VD: Beautiful In White" /></div>
-                    <div className={styles.formGroup}><label className={styles.label}>Link File Nhạc (MP3)</label><input className={styles.input} value={track.url || ''} onChange={e => setData(prev => { const newTracks = [...(prev.invitation.musicTracks || [])]; newTracks[i] = { ...newTracks[i], url: e.target.value }; return { ...prev, invitation: { ...prev.invitation, musicTracks: newTracks } }; })} placeholder="VD: /music/song.mp3 hoặc https://..." /></div>
+            {(contentSection === 'general' || contentSection === 'all') && (
+              <>
+                <div className={styles.card} style={{ background: isThankYouMode ? '#fdfaf5' : '#fff', borderColor: isThankYouMode ? '#C5A880' : '#eaeaea' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+                    <div>
+                      <h2 className={styles.cardTitle} style={{ marginBottom: 4 }}>
+                        Chế độ &quot;Cảm Ơn Sau Đám Cưới&quot; (Thank-You Mode)
+                      </h2>
+                      <p style={{ margin: 0, fontSize: '0.86rem', color: '#666' }}>
+                        Khi bật: Thiệp sẽ chuyển từ lời mời sang <strong>Thư cảm ơn chân thành</strong>, đưa <strong>Album ảnh cưới lên đầu trang</strong> và đổi form RSVP thành <strong>Gửi lời chúc lưu niệm</strong>.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={isThankYouMode ? styles.buttonPrimary : styles.buttonSecondary}
+                      onClick={toggleThankYouMode}
+                    >
+                      {isThankYouMode ? '✓ Đang BẬT Chế độ Cảm Ơn (Bấm để tắt)' : 'Bật Chế độ Cảm Ơn (1 chạm)'}
+                    </button>
                   </div>
-                  <button className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{marginTop: '12px'}} onClick={() => setData(prev => { const newTracks = prev.invitation.musicTracks.filter((_, idx) => idx !== i); return { ...prev, invitation: { ...prev.invitation, musicTracks: newTracks } }; })}>Xóa bài hát</button>
+                  <div className={styles.formGrid}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Tiêu đề lời cảm ơn</label>
+                      <input
+                        className={styles.input}
+                        placeholder="VD: Chân Thành Cảm Ơn"
+                        value={data.texts?.thankYouTitle || ''}
+                        onChange={e => handleTextChange(e, 'thankYouTitle')}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Link trọn bộ ảnh/video ngày cưới (Google Drive / Photos nếu có)</label>
+                      <input
+                        className={styles.input}
+                        placeholder="VD: https://drive.google.com/..."
+                        value={data.texts?.thankYouAlbumUrl || ''}
+                        onChange={e => handleTextChange(e, 'thankYouAlbumUrl')}
+                      />
+                    </div>
+                    <div className={`${styles.formGroup} ${styles.full}`}>
+                      <label className={styles.label}>Nội dung thư cảm ơn gửi khách mời</label>
+                      <textarea
+                        className={styles.textarea}
+                        style={{ minHeight: 80 }}
+                        placeholder="Cảm ơn bạn đã dành thời gian quý báu đến chung vui và gửi những lời chúc tốt đẹp nhất tới gia đình chúng mình. Sự hiện diện và tình cảm của bạn là niềm hạnh phúc lớn lao trong ngày trọng đại của hai vợ chồng!"
+                        value={data.texts?.thankYouMessage || ''}
+                        onChange={e => handleTextChange(e, 'thankYouMessage')}
+                      />
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>Thông tin chung</h2>
+                  <div className={styles.formGrid}>
+                    <div className={styles.formGroup}><label className={styles.label}>Tên Chú Rể</label><input className={styles.input} value={data.invitation.groom || ''} onChange={e => handleInputChange(e, 'groom')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Tên Cô Dâu</label><input className={styles.input} value={data.invitation.bride || ''} onChange={e => handleInputChange(e, 'bride')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Tên Chú Rể (Rút gọn)</label><input className={styles.input} value={data.invitation.groomShort || ''} onChange={e => handleInputChange(e, 'groomShort')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Tên Cô Dâu (Rút gọn)</label><input className={styles.input} value={data.invitation.brideShort || ''} onChange={e => handleInputChange(e, 'brideShort')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Ngày cưới (Tùy chỉnh)</label><input className={styles.input} value={data.invitation.dateString || ''} onChange={e => handleInputChange(e, 'dateString')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Ngày Âm Lịch</label><input className={styles.input} value={data.invitation.lunarDate || ''} onChange={e => handleInputChange(e, 'lunarDate')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Mô tả Chú rể (Bio)</label><input className={styles.input} value={data.invitation.groomBio || ''} onChange={e => handleInputChange(e, 'groomBio')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Mô tả Cô dâu (Bio)</label><input className={styles.input} value={data.invitation.brideBio || ''} onChange={e => handleInputChange(e, 'brideBio')} /></div>
+                  </div>
+                </div>
+
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>Ảnh chính & Nhận diện</h2>
+                  <div className={styles.formGrid}>
+                    <div className={styles.formGroup}><label className={styles.label}>Link ảnh Logo</label><input className={styles.input} value={data.invitation.logoUrl || ''} onChange={e => handleInputChange(e, 'logoUrl')} placeholder="VD: https://..." /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Link ảnh nền chính (Hero Background)</label><input className={styles.input} value={data.invitation.heroBgUrl || ''} onChange={e => handleInputChange(e, 'heroBgUrl')} placeholder="VD: https://..." /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Link ảnh kỉ niệm (Cạnh sổ lưu bút)</label><input className={styles.input} value={data.invitation.guestbookPhotoUrl || ''} onChange={e => handleInputChange(e, 'guestbookPhotoUrl')} placeholder="VD: https://..." /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Avatar Chú rể</label><input className={styles.input} value={data.invitation.groomAvatarUrl || ''} onChange={e => handleInputChange(e, 'groomAvatarUrl')} placeholder="VD: https://..." /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Avatar Cô dâu</label><input className={styles.input} value={data.invitation.brideAvatarUrl || ''} onChange={e => handleInputChange(e, 'brideAvatarUrl')} placeholder="VD: https://..." /></div>
+                  </div>
+                </div>
+
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>Thông tin Gia đình</h2>
+                  <div className={styles.formGrid}>
+                    <div className={styles.formGroup}><label className={styles.label}>Bố mẹ Chú rể (cách nhau bởi dấu phẩy)</label><input className={styles.input} value={(data.invitation.groomParents || []).join(', ')} onChange={e => setData(prev => ({...prev, invitation: {...prev.invitation, groomParents: e.target.value.split(',').map(s=>s.trim()).filter(Boolean)}}))} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Địa chỉ Nhà Trai</label><input className={styles.input} value={data.invitation.groomAddress || ''} onChange={e => handleInputChange(e, 'groomAddress')} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Bố mẹ Cô dâu (cách nhau bởi dấu phẩy)</label><input className={styles.input} value={(data.invitation.brideParents || []).join(', ')} onChange={e => setData(prev => ({...prev, invitation: {...prev.invitation, brideParents: e.target.value.split(',').map(s=>s.trim()).filter(Boolean)}}))} /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Địa chỉ Nhà Gái</label><input className={styles.input} value={data.invitation.brideAddress || ''} onChange={e => handleInputChange(e, 'brideAddress')} /></div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {(contentSection === 'events' || contentSection === 'all') && (
+              <>
+                <div className={styles.card}>
+                  <EventEditor events={data.events} onChange={events => setData(prev => ({ ...prev, events }))} />
+                </div>
+
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>Thông tin Ngân hàng (Mừng cưới)</h2>
+                  <div className={styles.formGrid}>
+                    <div className={styles.formGroup}><label className={styles.label}>Tên Ngân Hàng</label><input className={styles.input} value={data.invitation.bankName || ''} onChange={e => handleInputChange(e, 'bankName')} placeholder="VD: Vietcombank" /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Tên Chủ Tài Khoản</label><input className={styles.input} value={data.invitation.accountName || ''} onChange={e => handleInputChange(e, 'accountName')} placeholder="VD: NGUYEN VAN A" /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Số Tài Khoản</label><input className={styles.input} value={data.invitation.accountNumber || ''} onChange={e => handleInputChange(e, 'accountNumber')} placeholder="VD: 123456789" /></div>
+                    <div className={styles.formGroup}><label className={styles.label}>Link ảnh QR Mừng cưới</label><input className={styles.input} value={data.invitation.qrCodeUrl || ''} onChange={e => handleInputChange(e, 'qrCodeUrl')} placeholder="VD: https://..." /></div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {(contentSection === 'texts' || contentSection === 'all') && (
+              <div className={styles.card}>
+                <h2 className={styles.cardTitle}>Tùy chỉnh Văn Bản (Tiêu đề các phần)</h2>
+                <div className={styles.formGrid}>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiêu đề chính (VD: Lễ Thành Hôn)</label><input className={styles.input} value={data.texts?.heroSubtitle || ''} onChange={e => handleTextChange(e, 'heroSubtitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Lời mời (VD: Trân Trọng Kính Mời)</label><input className={styles.input} value={data.texts?.inviteTitle || ''} onChange={e => handleTextChange(e, 'inviteTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Câu chào (VD: Tới dự bữa tiệc...)</label><input className={styles.input} value={data.texts?.inviteGreeting || ''} onChange={e => handleTextChange(e, 'inviteGreeting')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Chữ &quot;Nhà Trai&quot;</label><input className={styles.input} value={data.texts?.groomParentsTitle || ''} onChange={e => handleTextChange(e, 'groomParentsTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Chữ &quot;Nhà Gái&quot;</label><input className={styles.input} value={data.texts?.brideParentsTitle || ''} onChange={e => handleTextChange(e, 'brideParentsTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiền tố địa điểm (VD: TẠI)</label><input className={styles.input} value={data.texts?.locationPrefix || ''} onChange={e => handleTextChange(e, 'locationPrefix')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Lịch Trình</label><input className={styles.input} value={data.texts?.itineraryTitle || ''} onChange={e => handleTextChange(e, 'itineraryTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Chuyện Tình Yêu</label><input className={styles.input} value={data.texts?.storyTitle || ''} onChange={e => handleTextChange(e, 'storyTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Ảnh Album</label><input className={styles.input} value={data.texts?.galleryTitle || ''} onChange={e => handleTextChange(e, 'galleryTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Sổ Lưu Bút</label><input className={styles.input} value={data.texts?.guestbookTitle || ''} onChange={e => handleTextChange(e, 'guestbookTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiêu đề RSVP</label><input className={styles.input} value={data.texts?.rsvpTitle || ''} onChange={e => handleTextChange(e, 'rsvpTitle')} /></div>
+                  <div className={styles.formGroup}><label className={styles.label}>Tiêu đề Gửi Quà</label><input className={styles.input} value={data.texts?.giftTitle || ''} onChange={e => handleTextChange(e, 'giftTitle')} /></div>
+                </div>
+              </div>
+            )}
+
+            {(contentSection === 'media' || contentSection === 'all') && (
+              <>
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>Chuyện Tình Yêu (Stories)</h2>
+                  <button className={styles.buttonSecondary} style={{marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px'}} onClick={() => setData(prev => ({ ...prev, stories: [...(prev.stories||[]), {id: crypto.randomUUID(), date: '', title: '', content: ''}] }))}><Icon icon={Plus} size={16} /> Thêm Câu Chuyện</button>
+                  {(data.stories || []).map((story, i) => (
+                    <div key={story.id} style={{ padding: '16px', border: '1px solid #eaeaea', borderRadius: '8px', marginBottom: '16px', background: '#fafafa' }}>
+                      <div className={styles.formGrid}>
+                        <div className={styles.formGroup}><label className={styles.label}>Thời gian</label><input className={styles.input} value={story.date} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, date: e.target.value} : s)}))} /></div>
+                        <div className={styles.formGroup}><label className={styles.label}>Tiêu đề</label><input className={styles.input} value={story.title} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, title: e.target.value} : s)}))} /></div>
+                        <div className={styles.formGroup}><label className={styles.label}>Link ảnh</label><input className={styles.input} value={story.imageUrl || ''} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, imageUrl: e.target.value} : s)}))} /></div>
+                        <div className={`${styles.formGroup} ${styles.full}`}><label className={styles.label}>Nội dung</label><textarea className={styles.textarea} value={story.content} onChange={e => setData(prev => ({...prev, stories: prev.stories.map((s, idx) => idx === i ? {...s, content: e.target.value} : s)}))} /></div>
+                      </div>
+                      <button className={`${styles.buttonSecondary} ${styles.buttonDanger}`} onClick={() => setData(prev => ({...prev, stories: prev.stories.filter((_, idx) => idx !== i)}))}>Xóa chuyện này</button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>Danh Sách Nhạc (Playlist)</h2>
+                  <button className={styles.buttonSecondary} style={{marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px'}} onClick={() => setData(prev => ({ ...prev, invitation: { ...prev.invitation, musicTracks: [...(prev.invitation.musicTracks || []), { name: '', url: '' }] } }))}><Icon icon={Plus} size={16} /> Thêm Bài Hát</button>
+                  {(data.invitation.musicTracks || []).map((track, i) => (
+                    <div key={i} style={{ padding: '16px', border: '1px solid #eaeaea', borderRadius: '8px', marginBottom: '16px', background: '#fafafa' }}>
+                      <div className={styles.formGrid}>
+                        <div className={styles.formGroup}><label className={styles.label}>Tên Bài Hát</label><input className={styles.input} value={track.name || ''} onChange={e => setData(prev => { const newTracks = [...(prev.invitation.musicTracks || [])]; newTracks[i] = { ...newTracks[i], name: e.target.value }; return { ...prev, invitation: { ...prev.invitation, musicTracks: newTracks } }; })} placeholder="VD: Beautiful In White" /></div>
+                        <div className={styles.formGroup}><label className={styles.label}>Link File Nhạc (MP3)</label><input className={styles.input} value={track.url || ''} onChange={e => setData(prev => { const newTracks = [...(prev.invitation.musicTracks || [])]; newTracks[i] = { ...newTracks[i], url: e.target.value }; return { ...prev, invitation: { ...prev.invitation, musicTracks: newTracks } }; })} placeholder="VD: /music/song.mp3 hoặc https://..." /></div>
+                      </div>
+                      <button className={`${styles.buttonSecondary} ${styles.buttonDanger}`} style={{marginTop: '12px'}} onClick={() => setData(prev => { const newTracks = prev.invitation.musicTracks.filter((_, idx) => idx !== i); return { ...prev, invitation: { ...prev.invitation, musicTracks: newTracks } }; })}>Xóa bài hát</button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
