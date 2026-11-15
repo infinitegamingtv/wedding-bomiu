@@ -836,25 +836,31 @@ export default function AdminPage() {
         <div className={styles.sidebarLogo}>BOMIUX ADMIN</div>
         <div className={styles.navMenu}>
           <button className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`} onClick={() => setActiveTab('dashboard')}>
-            <span style={{display: 'inline-flex', width: 20}}><Icon icon={LayoutDashboard} size={18} /></span> Tổng quan
+            <span className={styles.navIcon}><Icon icon={LayoutDashboard} size={18} /></span>
+            <span className={styles.navLabel}>Tổng quan</span>
           </button>
           <button className={`${styles.navItem} ${activeTab === 'crm' ? styles.active : ''}`} onClick={() => setActiveTab('crm')}>
-            <span style={{display: 'inline-flex', width: 20}}><Icon icon={Users} size={18} /></span> Khách & RSVP
+            <span className={styles.navIcon}><Icon icon={Users} size={18} /></span>
+            <span className={styles.navLabel}>Khách & RSVP</span>
           </button>
           <button className={`${styles.navItem} ${activeTab === 'seating' ? styles.active : ''}`} onClick={() => setActiveTab('seating')}>
-            <span style={{display: 'inline-flex', width: 20}}><Icon icon={Utensils} size={18} /></span> Xếp Mâm / Bàn
+            <span className={styles.navIcon}><Icon icon={Utensils} size={18} /></span>
+            <span className={styles.navLabel}>Xếp Mâm / Bàn</span>
           </button>
           <button className={`${styles.navItem} ${activeTab === 'gifts' ? styles.active : ''}`} onClick={() => setActiveTab('gifts')}>
-            <span style={{display: 'inline-flex', width: 20}}><Icon icon={Wallet} size={18} /></span> Sổ Tiền Mừng
+            <span className={styles.navIcon}><Icon icon={Wallet} size={18} /></span>
+            <span className={styles.navLabel}>Sổ Tiền Mừng</span>
           </button>
           <button className={`${styles.navItem} ${activeTab === 'content' ? styles.active : ''}`} onClick={() => setActiveTab('content')}>
-            <span style={{display: 'inline-flex', width: 20}}><Icon icon={PenTool} size={18} /></span> Nội dung thiệp
+            <span className={styles.navIcon}><Icon icon={PenTool} size={18} /></span>
+            <span className={styles.navLabel}>Nội dung thiệp</span>
           </button>
           <button className={`${styles.navItem} ${activeTab === 'gallery' ? styles.active : ''}`} onClick={() => setActiveTab('gallery')}>
-            <span style={{display: 'inline-flex', width: 20}}><Icon icon={ImageIcon} size={18} /></span> Ảnh Album
+            <span className={styles.navIcon}><Icon icon={ImageIcon} size={18} /></span>
+            <span className={styles.navLabel}>Ảnh Album</span>
           </button>
         </div>
-        <div style={{marginTop: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px'}}>
+        <div className={styles.sidebarFooter}>
           <input
             ref={restoreInputRef}
             type="file"
@@ -864,18 +870,16 @@ export default function AdminPage() {
           />
           <button
             type="button"
-            className={styles.buttonSecondary}
-            style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px' }}
+            className={`${styles.buttonSecondary} ${styles.sidebarActionFull}`}
             onClick={handleRefreshData}
             disabled={refreshing}
           >
             {refreshing ? 'Đang làm mới...' : 'Làm mới phản hồi'}
           </button>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className={styles.sidebarActionRow}>
             <button
               type="button"
-              className={styles.buttonSecondary}
-              style={{ flex: 1, fontSize: '0.78rem', padding: '7px 8px' }}
+              className={`${styles.buttonSecondary} ${styles.sidebarActionHalf}`}
               onClick={handleBackupJson}
               title="Tải toàn bộ dữ liệu khách, lời chúc, sơ đồ mâm, tiền mừng về máy (.json)"
             >
@@ -883,16 +887,15 @@ export default function AdminPage() {
             </button>
             <button
               type="button"
-              className={styles.buttonSecondary}
-              style={{ flex: 1, fontSize: '0.78rem', padding: '7px 8px' }}
+              className={`${styles.buttonSecondary} ${styles.sidebarActionHalf}`}
               onClick={() => restoreInputRef.current?.click()}
               title="Khôi phục toàn bộ dữ liệu từ file .json đã sao lưu"
             >
               Khôi phục
             </button>
           </div>
-          <a href="/" target="_blank" className={styles.buttonSecondary} style={{display: 'block', textAlign: 'center', textDecoration: 'none', fontSize: '0.88rem', padding: '8px 12px'}}>Xem thiệp &rarr;</a>
-          <button className={styles.buttonSecondary} style={{width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', fontSize: '0.88rem', padding: '8px 12px'}} onClick={logout}><Icon icon={LogOut} size={18} /> Đăng xuất</button>
+          <a href="/" target="_blank" className={`${styles.buttonSecondary} ${styles.sidebarActionLink}`}>Xem thiệp &rarr;</a>
+          <button className={`${styles.buttonSecondary} ${styles.sidebarActionLogout}`} onClick={logout}><Icon icon={LogOut} size={16} /> Đăng xuất</button>
         </div>
       </aside>
 
